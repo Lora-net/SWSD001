@@ -26,8 +26,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Determine TARGET_MCU based on TARGET_BOARD
-ifeq ($(TARGET_BOARD), NUCLEO_L476RG)
+# Determine TARGET_MCU based on MCU_BOARD
+ifeq ($(MCU_BOARD), NUCLEO_L476RG)
 TARGET_MCU ?= STM32L476xx
 else
 $(error Invalid target board, please select a supported target board)
@@ -46,10 +46,10 @@ include $(SMTC_HAL_MAKEFILE)
 TARGET_MAKEFILE = $(TOP_DIR)/host_driver/target.mk
 include $(TARGET_MAKEFILE)
 
-# At this point both TARGET_BOARD and TARGET_MCU are good. So we had their value to the defined preprocessor tokens
+# At this point both MCU_BOARD and TARGET_MCU are good. So we had their value to the defined preprocessor tokens
 
 C_DEFS +=  \
--D$(TARGET_BOARD) \
+-D$(MCU_BOARD) \
 -D$(TARGET_MCU)
 
 C_INCLUDES +=  \
@@ -59,10 +59,10 @@ C_INCLUDES +=  \
 # Add the macro debug trace definition
 ifeq ($(APP_TRACE),yes)
 C_DEFS += \
-	-DHAL_DBG_TRACE=1
+    -DHAL_DBG_TRACE=1
 endif
 
 ifeq ($(APP_TRACE),no)
 C_DEFS += \
-	-DHAL_DBG_TRACE=0
+    -DHAL_DBG_TRACE=0
 endif

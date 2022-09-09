@@ -41,12 +41,14 @@ extern "C" {
  *-----------------------------------------------------------------------------------
  * --- DEPENDENCIES -----------------------------------------------------------------
  */
-#include "smtc_real_defs.h"
 #include "lr1mac_defs.h"
+#include "smtc_real_defs.h"
 #include "radio_planner.h"
 #include "smtc_duty_cycle.h"
 #include "smtc_lbt.h"
-
+#define MIN_RX_WINDOW_SYMB 6         // open rx window at least 6 symbols
+#define MAX_RX_WINDOW_SYMB 255       // open rx window at max 225 symbol hardware limitation
+#define MIN_RX_WINDOW_DURATION_MS 6  // open rx window at least 6ms
 /*
  *-----------------------------------------------------------------------------------
  * --- PUBLIC TYPES -----------------------------------------------------------------
@@ -54,7 +56,7 @@ extern "C" {
 typedef struct lr1_stack_mac_s
 {
     mac_context_t mac_context;
-    smtc_real_t   real;  // Region Abstraction Layer
+    smtc_real_t*  real;  // Region Abstraction Layer
     smtc_dtc_t*   dtc_obj;
     smtc_lbt_t*   lbt_obj;
 
@@ -67,12 +69,11 @@ typedef struct lr1_stack_mac_s
     /*******************************************/
     /*      Update by Link ADR command         */
     /*******************************************/
-    uint8_t  tx_data_rate;
-    uint8_t  tx_data_rate_adr;
-    int8_t   tx_power;
-    uint16_t channel_mask;
-    uint8_t  nb_trans;
-    uint8_t  nb_trans_cpt;
+    uint8_t tx_data_rate;
+    uint8_t tx_data_rate_adr;
+    int8_t  tx_power;
+    uint8_t nb_trans;
+    uint8_t nb_trans_cpt;
     /********************************************/
     /*     Update by RxParamaSetupRequest       */
     /********************************************/
@@ -87,11 +88,11 @@ typedef struct lr1_stack_mac_s
     /********************************************/
     /*   Update by RxTimingSetupReq command     */
     /********************************************/
-    int rx1_delay_s;
+    uint8_t rx1_delay_s;
     /********************************************/
     /*   Update by TxParamSetupReq command      */
     /********************************************/
-    uint8_t max_eirp_dbm;
+    uint8_t max_erp_dbm;
     bool    uplink_dwell_time;
     bool    downlink_dwell_time;
     /********************************************/
@@ -107,27 +108,28 @@ typedef struct lr1_stack_mac_s
     lr1mac_activation_mode_t activation_mode;
 
     // LoRaWan Mac Data for uplink
-    uint8_t tx_fport;
-    bool    tx_fport_present;
-    uint8_t tx_mtype;
-    uint8_t tx_major_bits;
-    uint8_t tx_fctrl;
-    uint8_t tx_ack_bit;
-    uint8_t tx_class_b_bit;
-    uint8_t app_payload_size;
-    uint8_t tx_payload_size;
-    uint8_t tx_payload[255];
-    uint8_t tx_fopts_length;
-    uint8_t tx_fopts_data[DEVICE_MAC_PAYLOAD_MAX_SIZE];
-    uint8_t tx_fopts_lengthsticky;
-    uint8_t tx_fopts_datasticky[15];
-    uint8_t tx_fopts_current_length;
-    uint8_t tx_fopts_current_data[15];
+    uint8_t              tx_fport;
+    bool                 tx_fport_present;
+    lr1mac_layer_param_t tx_mtype;
+    uint8_t              tx_major_bits;
+    uint8_t              tx_fctrl;
+    uint8_t              tx_ack_bit;
+    uint8_t              tx_class_b_bit;
+    uint8_t              app_payload_size;
+    uint8_t              tx_payload_size;
+    uint8_t              tx_payload[255];
+    uint8_t              tx_fopts_length;
+    uint8_t              tx_fopts_data[DEVICE_MAC_PAYLOAD_MAX_SIZE];
+    uint8_t              tx_fopts_lengthsticky;
+    uint8_t              tx_fopts_datasticky[15];
+    uint8_t              tx_fopts_current_length;
+    uint8_t              tx_fopts_current_data[15];
     // LoRaWan Mac Data for downlink
-    uint8_t               rx_ftype;
+    lr1mac_layer_param_t  rx_ftype;
     uint8_t               rx_major;
     uint8_t               rx_fctrl;
     uint8_t               rx_ack_bit;
+    uint8_t               rx_fpending_bit_current;
     uint8_t               rx_fopts_length;
     uint8_t               rx_fopts[15];
     uint8_t               rx_payload_size;  //@note Have to by replace by a fifo objet to manage class c
@@ -135,7 +137,6 @@ typedef struct lr1_stack_mac_s
     uint8_t               rx_payload_empty;
     user_rx_packet_type_t available_app_packet;
     rx_packet_type_t      valid_rx_packet;
-    receive_win_t         receive_window_type;
 
     // LoRaWan Mac Data for duty-cycle
     uint32_t tx_duty_cycle_time_off_ms;
@@ -156,13 +157,16 @@ typedef struct lr1_stack_mac_s
 
     // LoraWan Config
     int           adr_ack_cnt;
-    int           adr_ack_limit;
-    int           adr_ack_delay;
+    uint8_t       adr_ack_delay_init;
+    uint8_t       adr_ack_limit_init;
+    uint8_t       adr_ack_limit;
+    uint8_t       adr_ack_delay;
     uint8_t       adr_ack_req;
     uint8_t       adr_enable;
     dr_strategy_t adr_mode_select;
     dr_strategy_t adr_mode_select_tmp;
-    uint32_t      adr_custom;
+    uint32_t      adr_custom[2];
+    uint16_t      no_rx_packet_reset_threshold;
     uint16_t      no_rx_packet_count;
     uint16_t      no_rx_packet_count_in_mobile_mode;
 
@@ -180,6 +184,7 @@ typedef struct lr1_stack_mac_s
     // initially implemented in phy layer
     lr1mac_radio_state_t   radio_process_state;
     radio_planner_t*       rp;
+    uint8_t                stack_id4rp;
     uint32_t               rx_timeout_ms;
     uint32_t               rx_timeout_symb_in_ms;
     uint16_t               rx_window_symb;
@@ -190,7 +195,6 @@ typedef struct lr1_stack_mac_s
     int16_t                fine_tune_board_setting_delay_ms[16];
     int32_t                rx_offset_ms;
     uint32_t               timestamp_failsafe;
-    uint32_t               dev_addr_isr;
     uint8_t                type_of_ans_to_send;
     uint8_t                nwk_payload_index;
     lr1mac_states_t        lr1mac_state;
@@ -198,7 +202,6 @@ typedef struct lr1_stack_mac_s
     uint8_t                send_at_time;
     bool                   available_link_adr;
     uint8_t                is_lorawan_modem_certification_enabled;
-    uint8_t                stack_id4rp;
     uint32_t               crystal_error;
 
     // LinkCheck
@@ -209,6 +212,7 @@ typedef struct lr1_stack_mac_s
     uint32_t seconds_since_epoch;
     uint32_t fractional_second;
     uint32_t timestamp_tx_done_device_time_req_ms;
+    uint32_t timestamp_tx_done_device_time_req_ms_tmp;
     uint32_t timestamp_last_device_time_ans_s;
     void ( *device_time_callback )( void*, uint32_t );
     void*    device_time_callback_context;
@@ -223,8 +227,11 @@ typedef struct lr1_stack_mac_s
     uint32_t beacon_freq_hz;
     uint32_t ping_slot_freq_hz;
     uint8_t  ping_slot_dr;
-    uint8_t  ping_slot_periodicity;
+    uint8_t  ping_slot_periodicity_req;  // Value Requested by the user
+    uint8_t  ping_slot_periodicity_ans;  // Value Acknowledged by the Network
 
+    // Downlink Network
+    bool push_network_downlink_to_user;
 } lr1_stack_mac_t;
 
 /*
@@ -305,21 +312,8 @@ void lr1_stack_mac_rx_radio_start( lr1_stack_mac_t* lr1_mac, const rx_win_type_t
  * \param [IN]  none
  * \param [OUT] return
  */
-int lr1_stack_mac_downlink_check_under_it( lr1_stack_mac_t* lr1_mac );
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
 void lr1_stack_mac_rp_callback( lr1_stack_mac_t* lr1_mac );
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
-int lr1_stack_mac_radio_state_get( lr1_stack_mac_t* lr1_mac );
+
 /*!
  * \brief
  * \remark
@@ -369,44 +363,6 @@ void lr1_stack_mac_join_request_build( lr1_stack_mac_t* lr1_mac );
  * \param [OUT] return
  */
 status_lorawan_t lr1_stack_mac_join_accept( lr1_stack_mac_t* lr1_mac );
-
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
-uint8_t lr1_stack_mac_min_tx_dr_get( lr1_stack_mac_t* lr1_mac );
-
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
-uint8_t lr1_stack_mac_max_tx_dr_get( lr1_stack_mac_t* lr1_mac );
-
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
-uint16_t lr1_stack_mac_mask_tx_dr_channel_up_dwell_time_check( lr1_stack_mac_t* lr1_mac );
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
-void lr1_stack_rx1_join_delay_set( lr1_stack_mac_t* lr1_mac );
-/*!
- * \brief
- * \remark
- * \param [IN]  none
- * \param [OUT] return
- */
-void lr1_stack_rx2_join_dr_set( lr1_stack_mac_t* lr1_mac );
 
 /*!
  * \brief lr1_stack_network_next_free_duty_cycle_ms_get
@@ -474,6 +430,7 @@ status_lorawan_t lr1mac_rx_payload_max_size_check( lr1_stack_mac_t* lr1_mac, uin
  */
 void lr1_stack_mac_tx_lora_launch_callback_for_rp( void* rp_void );
 void lr1_stack_mac_tx_gfsk_launch_callback_for_rp( void* rp_void );
+void lr1_stack_mac_tx_lr_fhss_launch_callback_for_rp( void* rp_void );
 void lr1_stack_mac_rx_lora_launch_callback_for_rp( void* rp_void );
 void lr1_stack_mac_rx_gfsk_launch_callback_for_rp( void* rp_void );
 

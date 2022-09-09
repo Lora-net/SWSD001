@@ -42,6 +42,7 @@
 
 #include "smtc_modem_hal.h"
 #include "smtc_hal.h"
+#include "smtc_board.h"
 
 #include "modem_pinout.h"
 
@@ -129,6 +130,18 @@ int32_t smtc_modem_hal_get_time_compensation_in_s( void )
 uint32_t smtc_modem_hal_get_time_in_ms( void )
 {
     return hal_rtc_get_time_ms( );
+}
+
+uint32_t smtc_modem_hal_get_time_in_100us( void )
+{
+    return hal_rtc_get_time_100us( );
+}
+
+uint32_t smtc_modem_hal_get_radio_irq_timestamp_in_100us( void )
+{
+    // In current LBM implementation the call of this function is done in radio_planner radio irq handler
+    // so the current time is the irq time
+    return hal_rtc_get_time_100us( );
 }
 
 /* ------------ Timer management ------------*/
@@ -229,6 +242,20 @@ bool smtc_modem_hal_get_crashlog_status( void )
     return crashlog_available;
 }
 
+/* ------------ assert management ------------*/
+
+void smtc_modem_hal_assert_fail( uint8_t* func, uint32_t line )
+{
+    smtc_modem_hal_store_crashlog( ( uint8_t* ) func );
+    smtc_modem_hal_set_crashlog_status( true );
+    smtc_modem_hal_print_trace(
+        "\x1B[0;31m"  // red color
+        "crash log :%s:%u\n"
+        "\x1B[0m",  // revert default color
+        func, line );
+    smtc_modem_hal_reset_mcu( );
+}
+
 /* ------------ Random management ------------*/
 
 uint32_t smtc_modem_hal_get_random_nb( void )
@@ -257,9 +284,9 @@ void smtc_modem_hal_irq_config_radio_irq( void ( *callback )( void* context ), v
     hal_gpio_irq_attach( &radio_dio_irq );
 }
 
-bool smtc_modem_hal_irq_is_radio_irq_pending( void )
+void smtc_modem_hal_radio_irq_clear_pending( void )
 {
-    return hal_gpio_is_pending_irq( SMTC_RADIO_DIOX );
+    hal_gpio_clear_pending_irq( SMTC_RADIO_DIOX );
 }
 
 void smtc_modem_hal_start_radio_tcxo( void )
@@ -274,7 +301,7 @@ void smtc_modem_hal_stop_radio_tcxo( void )
 
 uint32_t smtc_modem_hal_get_radio_tcxo_startup_delay_ms( void )
 {
-    return 5;
+    return smtc_board_get_tcxo_startup_time_in_ms( );
 }
 
 /* ------------ Environment management ------------*/

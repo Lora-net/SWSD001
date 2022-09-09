@@ -41,10 +41,6 @@
 
 #include "smtc_hal_adc.h"
 #include "stm32l4xx_hal.h"
-
-//{ OCT: is it used?
-//#include "modem_pinout.h"
-//} OCT
 #include "smtc_hal_mcu.h"
 
 /*

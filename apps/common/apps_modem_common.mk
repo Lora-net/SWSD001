@@ -26,20 +26,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-CRYPTO ?= LR1110
+CRYPTO ?= LR11XX
+MIDDLEWARE ?= no
+
+RADIO_BOARD ?= LR1110MB1DIS
+
+ifeq ($(RADIO_BOARD), LR1110MB1DIS)
+$(warning This is the default value for RADIO_BOARD - please make sure it is adapted to your target)
+endif
 
 ifeq ($(CRYPTO),SOFT)
 C_DEFS += \
-	-DUSER_DEFINED_JOIN_PARAMETERS
-else ifeq ($(CRYPTO),LR1110)
+    -DUSER_DEFINED_JOIN_PARAMETERS
+else ifeq ($(CRYPTO),LR11XX)
 C_DEFS += \
-	-DUSER_DEFINED_JOIN_PARAMETERS
-else ifeq ($(CRYPTO),LR1110_WITH_CREDENTIALS)
+    -DUSER_DEFINED_JOIN_PARAMETERS
+else ifeq ($(CRYPTO),LR11XX_WITH_CREDENTIALS)
 C_DEFS += \
-	-DLR1110_DEFINED_JOIN_PARAMETERS
+    -DLR11XX_DEFINED_JOIN_PARAMETERS
 else
-	$(error Invalid crypto option)
+    $(error Invalid crypto option, options are: SOFT | LR11XX | LR11XX_WITH_CREDENTIALS )
 endif
+
+RP_VERSION ?= RP2_103
 
 SMTC_HAL_MAKEFILE = $(TOP_DIR)/smtc_hal/smtc_hal_target.mk
 LBM_MAKEFILE = $(TOP_DIR)/lora_basics_modem/makefiles/common.mk
@@ -58,4 +67,6 @@ C_INCLUDES +=  \
 -I$(TOP_DIR)/apps/common
 
 LBM_LIB = $(LORA_BASICS_MODEM)/build/basic_modem.a
+
+.PHONY: $(LBM_LIB)
 $(LBM_LIB): build_basic_modem

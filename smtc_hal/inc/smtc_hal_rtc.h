@@ -111,6 +111,15 @@ uint32_t hal_rtc_get_time_s( void );
 uint32_t hal_rtc_get_time_ms( void );
 
 /*!
+ * @brief Returns the current RTC time in 0.1milliseconds
+ *
+ * @remark will also be used for D2D
+ *
+ * @returns rtc_time_100us Current RTC time in 0.1ms wraps every 4.9 days
+ */
+uint32_t hal_rtc_get_time_100us( void );
+
+/*!
  * @brief Waits delay milliseconds by polling RTC
  *
  * @param [in] milliseconds Delay in ms
@@ -173,6 +182,14 @@ uint32_t hal_rtc_get_timer_value( void );
  * @returns milliseconds Time in timer ticks
  */
 uint32_t hal_rtc_ms_2_tick( const uint32_t milliseconds );
+
+/*!
+ * @brief Converts time in ticks to time in 0.1 ms
+ *
+ * @param [in] tick Time in timer ticks
+ * @returns tick Time in 0.1 milliseconds
+ */
+uint32_t hal_rtc_tick_2_100_us( const uint32_t tick );
 
 /*!
  * @brief Converts time in ticks to time in ms

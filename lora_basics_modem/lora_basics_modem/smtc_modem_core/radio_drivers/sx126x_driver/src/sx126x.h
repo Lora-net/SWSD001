@@ -90,6 +90,11 @@ extern "C" {
 #define SX126X_OCP_PARAM_VALUE_140_MA 0x38
 
 /**
+ * @brief XTA and XTB trimming capacitor default value after the chip entered @ref SX126X_STANDBY_CFG_XOSC mode
+ */
+#define SX126X_XTAL_TRIMMING_CAPACITOR_DEFAULT_VALUE_STDBY_XOSC 0x12
+
+/**
  * @brief  Maximum value for parameter nb_of_symbs in @ref sx126x_set_lora_symb_nb_timeout
  */
 #define SX126X_MAX_LORA_SYMB_NUM_TIMEOUT 248
@@ -98,6 +103,13 @@ extern "C" {
  * @brief Maximum number of register that can be added to the retention list
  */
 #define SX126X_MAX_NB_REG_IN_RETENTION 4
+
+/*!
+ * @brief Frequency step in MHz used to compute the image calibration parameter
+ *
+ * @see sx126x_cal_img_in_mhz
+ */
+#define SX126X_IMAGE_CALIBRATION_STEP_IN_MHZ 4
 
 #define SX126X_CHIP_MODES_POS ( 4U )
 #define SX126X_CHIP_MODES_MASK ( 0x07UL << SX126X_CHIP_MODES_POS )
@@ -205,9 +217,11 @@ enum sx126x_irq_masks_e
     SX126X_IRQ_CAD_DONE          = ( 1 << 7 ),
     SX126X_IRQ_CAD_DETECTED      = ( 1 << 8 ),
     SX126X_IRQ_TIMEOUT           = ( 1 << 9 ),
+    SX126X_IRQ_LR_FHSS_HOP       = ( 1 << 14 ),
     SX126X_IRQ_ALL               = SX126X_IRQ_TX_DONE | SX126X_IRQ_RX_DONE | SX126X_IRQ_PREAMBLE_DETECTED |
                      SX126X_IRQ_SYNC_WORD_VALID | SX126X_IRQ_HEADER_VALID | SX126X_IRQ_HEADER_ERROR |
-                     SX126X_IRQ_CRC_ERROR | SX126X_IRQ_CAD_DONE | SX126X_IRQ_CAD_DETECTED | SX126X_IRQ_TIMEOUT,
+                     SX126X_IRQ_CRC_ERROR | SX126X_IRQ_CAD_DONE | SX126X_IRQ_CAD_DETECTED | SX126X_IRQ_TIMEOUT |
+                     SX126X_IRQ_LR_FHSS_HOP,
 };
 
 typedef uint16_t sx126x_irq_mask_t;
@@ -250,8 +264,9 @@ typedef enum sx126x_tcxo_ctrl_voltages_e
  */
 typedef enum sx126x_pkt_types_e
 {
-    SX126X_PKT_TYPE_GFSK = 0x00,
-    SX126X_PKT_TYPE_LORA = 0x01,
+    SX126X_PKT_TYPE_GFSK    = 0x00,
+    SX126X_PKT_TYPE_LORA    = 0x01,
+    SX126X_PKT_TYPE_LR_FHSS = 0x03,
 } sx126x_pkt_type_t;
 
 /**
@@ -707,6 +722,8 @@ sx126x_status_t sx126x_set_tx_with_timeout_in_rtc_step( const void* context, con
  * | ----------------------| --------------------------------------------------------------------------------------|
  * | SX126X_RX_SINGLE_MODE | Single: the chip stays in RX mode until a reception occurs, then switch to standby RC |
  *
+ * @remark Refer to @ref sx126x_handle_rx_done
+ *
  * @param [in] context Chip implementation context
  * @param [in] timeout_in_ms The timeout configuration in millisecond for Rx operation
  *
@@ -734,6 +751,8 @@ sx126x_status_t sx126x_set_rx( const void* context, const uint32_t timeout_in_ms
  * | ----------------------| --------------------------------------------------------------------------------------|
  * | SX126X_RX_SINGLE_MODE | Single: the chip stays in RX mode until a reception occurs, then switch to standby RC |
  * | SX126X_RX_CONTINUOUS  | Continuous: the chip stays in RX mode even after reception of a packet                |
+ *
+ * @remark Refer to @ref sx126x_handle_rx_done
  *
  * @param [in] context Chip implementation context
  * @param [in] timeout_in_rtc_step The timeout configuration for Rx operation
@@ -853,14 +872,30 @@ sx126x_status_t sx126x_set_reg_mode( const void* context, const sx126x_reg_mod_t
 sx126x_status_t sx126x_cal( const void* context, const sx126x_cal_mask_t param );
 
 /**
- * @brief Perform device operating frequency band image rejection calibration
+ * @brief Launch an image calibration valid for all frequencies inside an interval, in steps
  *
  * @param [in] context Chip implementation context
- * @param [in] freq_in_hz Frequency in Hz used for the image calibration
+ * @param [in] freq1 Image calibration interval lower bound, in steps
+ * @param [in] freq2 Image calibration interval upper bound, in steps
+ *
+ * @remark freq1 must be less than or equal to freq2
  *
  * @returns Operation status
  */
-sx126x_status_t sx126x_cal_img( const void* context, const uint32_t freq_in_hz );
+sx126x_status_t sx126x_cal_img( const void* context, const uint8_t freq1, const uint8_t freq2 );
+
+/**
+ * @brief Launch an image calibration valid for all frequencies inside an interval, in MHz
+ *
+ * @param [in] context Chip implementation context
+ * @param [in] freq1_in_mhz Image calibration interval lower bound, in MHz
+ * @param [in] freq2_in_mhz Image calibration interval upper bound, in MHz
+ *
+ * @remark freq1_in_mhz must be less than or equal to freq2_in_mhz
+ *
+ * @returns Operation status
+ */
+sx126x_status_t sx126x_cal_img_in_mhz( const void* context, const uint16_t freq1_in_mhz, const uint16_t freq2_in_mhz );
 
 /**
  * @brief Configure the PA (Power Amplifier)
@@ -1152,6 +1187,20 @@ sx126x_status_t sx126x_set_gfsk_pkt_params( const void* context, const sx126x_pk
  */
 sx126x_status_t sx126x_set_lora_pkt_params( const void* context, const sx126x_pkt_params_lora_t* params );
 
+/*!
+ * @brief Set the Node and Broadcast address used for GFSK
+ *
+ * This setting is used only when filtering is enabled.
+ *
+ * @param [in] context Chip implementation context
+ * @param [in] node_address The node address used as filter
+ * @param [in] broadcast_address The broadcast address used as filter
+ *
+ * @returns Operation status
+ */
+sx126x_status_t sx126x_set_gfsk_pkt_address( const void* context, const uint8_t node_address,
+                                             const uint8_t broadcast_address );
+
 /**
  * @brief Set the parameters for CAD operation
  *
@@ -1425,6 +1474,18 @@ uint32_t sx126x_convert_freq_in_hz_to_pll_step( uint32_t freq_in_hz );
  * @returns Number of RTC steps
  */
 uint32_t sx126x_convert_timeout_in_ms_to_rtc_step( uint32_t timeout_in_ms );
+
+/**
+ * @brief Generic finalizing function after reception
+ *
+ * @remark This function can be called after any reception sequence and must be called after any reception with timeout
+ * active sequence.
+ *
+ * @param [in] context Chip implementation context
+ *
+ * @returns Operation status
+ */
+sx126x_status_t sx126x_handle_rx_done( const void* context );
 
 //
 // Registers access

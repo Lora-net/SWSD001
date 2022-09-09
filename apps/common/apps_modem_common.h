@@ -70,11 +70,23 @@ extern "C" {
  */
 
 /*!
- * @brief Get the time from the modem
+ * @brief Get the GPS time from the modem
  *
- * @returns Unix time in second
+ * @returns GPS time in second
  */
-uint32_t apps_modem_common_get_time( void );
+uint32_t apps_modem_common_get_gps_time( void );
+
+/*!
+ * @brief Get the UTC time from the modem
+ *
+ * @returns UTC time in second
+ */
+uint32_t apps_modem_common_get_utc_time( void );
+
+/*!
+ * @brief convert GPS time to UTC time
+ */
+uint32_t apps_modem_common_convert_gps_to_utc_time( uint32_t gps );
 
 /*!
  * @brief Configure LoRaWAN parameters (DevEUI, JoinEUI, AppKey, region and class)
@@ -86,9 +98,23 @@ uint32_t apps_modem_common_get_time( void );
 void apps_modem_common_configure_lorawan_params( uint8_t stack_id );
 
 /*!
+ * @brief Display version information
+ *
+ * Displays LoRaWAN, LBM and SDK version
+ *
+ * @see apps_modem_common_display_lbm_version, apps_modem_commom_display_sdk_version
+ */
+void apps_modem_common_display_version_information( void );
+
+/*!
  * @brief Display the Lora Basics Modem current version
  */
 void apps_modem_common_display_lbm_version( void );
+
+/*!
+ * @brief Display the version of the SDK
+ */
+void apps_modem_commom_display_sdk_version( void );
 
 #ifdef __cplusplus
 }

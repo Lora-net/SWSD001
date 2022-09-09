@@ -34,7 +34,7 @@ GCOVR = gcovr
 # Board selection
 #-----------------------------------------------------------------------------
 
--include makefiles/stm32l4.mk
+-include makefiles/cortex_m4.mk
 
 
 #-----------------------------------------------------------------------------
@@ -78,15 +78,31 @@ TARGET_MODEM := $(TARGET_MODEM)_cov_modem
 endif
 
 ifeq ($(RADIO),lr1110)
-ifeq ($(CRYPTO),LR1110)
-TARGET_MODEM := $(TARGET_MODEM)_hw_crypto
-BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_hw_crypto
-endif # LR1110
-ifeq ($(CRYPTO),LR1110_WITH_CREDENTIALS)
-TARGET_MODEM := $(TARGET_MODEM)_hw_crypto
-BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_hw_crypto
-endif # LR1110_WITH_CREDENTIALS
+ifeq ($(CRYPTO),LR11XX)
+TARGET_MODEM := $(TARGET_MODEM)_lr11xx_crypto
+BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_lr11xx_crypto
+endif # LR11XX
+ifeq ($(CRYPTO),LR11XX_WITH_CREDENTIALS)
+TARGET_MODEM := $(TARGET_MODEM)_lr11xx_crypto_with_cred
+BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_lr11xx_crypto_with_cred
+endif # LR11XX_WITH_CREDENTIALS
 endif # lr1110
+
+ifeq ($(RADIO),lr1120)
+ifeq ($(CRYPTO),LR11XX)
+TARGET_MODEM := $(TARGET_MODEM)_lr11xx_crypto
+BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_lr11xx_crypto
+endif # LR11XX
+ifeq ($(CRYPTO),LR11XX_WITH_CREDENTIALS)
+TARGET_MODEM := $(TARGET_MODEM)_lr11xx_crypto_with_cred
+BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_lr11xx_crypto_with_cred
+endif # LR11XX_WITH_CREDENTIALS
+endif # lr1120
+
+ifeq ($(MIDDLEWARE),yes)
+TARGET_MODEM := $(TARGET_MODEM)_middleware
+BUILD_DIR_MODEM := $(BUILD_DIR_MODEM)_middleware
+endif
 
 ifeq ($(MODEM_TRACE), yes)
 TARGET_MODEM := $(TARGET_MODEM)_trace
@@ -115,12 +131,22 @@ COVERAGE_CFLAGS = -fprofile-arcs -ftest-coverage
 
 # When compiling with coverage we should disable optimizations
 ifneq ($(COVERAGE),no) 
-OPT = -O0 -g
+#OPT = -O0 -g
+DEBUG = yes
 COVERAGE_LDFLAGS = -fprofile-arcs
 LIBS += -lgcov
 else
-OPT = -Os -g
+#OPT = -Os -g
 COVERAGE_LDFLAGS = 
+endif
+
+#-----------------------------------------------------------------------------
+# Debug
+#-----------------------------------------------------------------------------
+ifeq ($(DEBUG),yes)
+OPT = -O0 -ggdb3 -gdwarf
+else
+OPT = -Os
 endif
 
 #-----------------------------------------------------------------------------
@@ -166,6 +192,10 @@ WFLAG += \
 # Generate .su files for stack use analysis
 WFLAG += -fstack-usage 
 
+# Change symbols path to please debug tools
+CURRENT_DIR := $(shell basename $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST)))))
+WFLAG += -ffile-prefix-map==$(CURRENT_DIR)/
+
 #Link-time optimization
 #WFLAG += --lto 
 
@@ -184,6 +214,14 @@ COMMON_C_DEFS += \
 ifeq ($(MODEM_TRACE),yes)
 COMMON_C_DEFS += \
 	-DMODEM_HAL_DBG_TRACE=1
+ifeq ($(MODEM_DEEP_TRACE),yes)
+COMMON_C_DEFS += \
+	-DMODEM_HAL_DEEP_DBG_TRACE=1
+endif
+ifeq ($(MODEM_DEEP_TRACE),no)
+COMMON_C_DEFS += \
+	-DMODEM_HAL_DEEP_DBG_TRACE=0
+endif
 endif
 
 ifeq ($(MODEM_TRACE),no)
@@ -196,8 +234,40 @@ COMMON_C_DEFS += \
 	-DPERF_TEST_ENABLED
 endif
 
+ifeq ($(MIDDLEWARE),yes)
+COMMON_C_DEFS += \
+	-DTASK_EXTENDED_1 \
+	-DTASK_EXTENDED_2 \
+	-DENABLE_FAST_CLOCK_SYNC
+endif
 
-CFLAGS += -fno-builtin $(MCU) $(BOARD_C_DEFS) $(COMMON_C_DEFS) $(MODEM_C_DEFS) $(BOARD_C_INCLUDES) $(COMMON_C_INCLUDES) $(MODEM_C_INCLUDES) $(OPT) $(WFLAG) -MMD -MP -MF"$(@:%.o=%.d)"
+ifeq ($(ADD_D2D),yes)
+COMMON_C_DEFS += \
+	-DSMTC_D2D
+endif
+
+ifeq ($(ADD_MULTICAST),yes)
+COMMON_C_DEFS += \
+	-DSMTC_MULTICAST
+endif
+
+ifeq ($(ADD_SMTC_STREAM),yes)
+COMMON_C_DEFS += \
+	-DADD_SMTC_STREAM
+endif
+
+ifeq ($(ADD_SMTC_FILE_UPLOAD),yes)
+COMMON_C_DEFS += \
+	-DADD_SMTC_FILE_UPLOAD
+endif
+
+ifeq ($(ADD_SMTC_ALC_SYNC),yes)
+COMMON_C_DEFS += \
+	-DADD_SMTC_ALC_SYNC
+endif
+
+
+CFLAGS += -fno-builtin $(MCU_FLAGS) $(BOARD_C_DEFS) $(COMMON_C_DEFS) $(MODEM_C_DEFS) $(BOARD_C_INCLUDES) $(COMMON_C_INCLUDES) $(MODEM_C_INCLUDES) $(OPT) $(WFLAG) -MMD -MP -MF"$(@:%.o=%.d)"
 CFLAGS += -falign-functions=4
 CFLAGS += -std=c17
 
@@ -209,18 +279,6 @@ endif
 #-----------------------------------------------------------------------------
 # libraries
 LIBS += -lstdc++ -lsupc++ -lm -lc -lnosys
-
-LIBDIR =
-
-LDFLAGS += $(MCU) 
-LDFLAGS += --specs=nano.specs 
-LDFLAGS += --specs=nosys.specs
-LDFLAGS += -T$(BOARD_LDSCRIPT) $(LIBDIR) $(LIBS) $(COVERAGE_LDFLAGS)
-LDFLAGS += -Wl,--cref # Cross-reference table
-LDFLAGS += -Wl,--print-memory-usage # Display ram/flash memory usage
-LDFLAGS += -Wl,--gc-sections # Garbage collect unused sections
-
-
 
 #-----------------------------------------------------------------------------
 # Common sources
@@ -234,15 +292,30 @@ SMTC_MODEM_CORE_C_SOURCES += \
 	smtc_modem_core/modem_services/fifo_ctrl.c\
 	smtc_modem_core/modem_services/modem_utilities.c \
 	smtc_modem_core/modem_services/smtc_modem_services_hal.c\
-	smtc_modem_core/modem_services/smtc_clock_sync.c\
 	smtc_modem_core/modem_services/lorawan_certification.c\
 	smtc_modem_core/modem_supervisor/modem_supervisor.c
 
+ifeq ($(ADD_SMTC_ALC_SYNC),yes)
+SMTC_MODEM_CORE_C_SOURCES += \
+	smtc_modem_core/modem_services/smtc_clock_sync.c
+endif
+
+ifeq ($(ADD_SMTC_STREAM),yes)
 SMTC_MODEM_SERVICES_C_SOURCES += \
 	smtc_modem_core/smtc_modem_services/src/stream/stream.c\
-	smtc_modem_core/smtc_modem_services/src/stream/rose.c\
-	smtc_modem_core/smtc_modem_services/src/alc_sync/alc_sync.c\
-	smtc_modem_core/smtc_modem_services/src/file_upload/file_upload.c\
+	smtc_modem_core/smtc_modem_services/src/stream/rose.c
+endif
+
+ifeq ($(ADD_SMTC_FILE_UPLOAD),yes)
+SMTC_MODEM_SERVICES_C_SOURCES += \
+	smtc_modem_core/smtc_modem_services/src/file_upload/file_upload.c
+endif
+
+ifeq ($(ADD_SMTC_ALC_SYNC),yes)
+SMTC_MODEM_SERVICES_C_SOURCES += \
+	smtc_modem_core/smtc_modem_services/src/alc_sync/alc_sync.c
+endif
+
 
 LR1MAC_C_SOURCES += \
 	smtc_modem_core/lr1mac/src/lr1_stack_mac_layer.c\
@@ -251,7 +324,19 @@ LR1MAC_C_SOURCES += \
 	smtc_modem_core/lr1mac/src/smtc_real/src/smtc_real.c\
 	smtc_modem_core/lr1mac/src/services/smtc_duty_cycle.c\
 	smtc_modem_core/lr1mac/src/services/smtc_lbt.c\
-	smtc_modem_core/lr1mac/src/lr1mac_class_c/lr1mac_class_c.c
+	smtc_modem_core/lr1mac/src/lr1mac_class_c/lr1mac_class_c.c\
+	smtc_modem_core/lr1mac/src/lr1mac_class_b/smtc_beacon_sniff.c\
+	smtc_modem_core/lr1mac/src/lr1mac_class_b/smtc_ping_slot.c
+
+ifeq ($(ADD_D2D),yes)
+LR1MAC_C_SOURCES += \
+	smtc_modem_core/lr1mac/src/lr1mac_class_b/smtc_d2d.c
+endif
+
+ifeq ($(ADD_MULTICAST),yes)
+LR1MAC_C_SOURCES += \
+	smtc_modem_core/lr1mac/src/services/smtc_multicast.c
+endif
 
 SMTC_MODEM_CRYPTO_C_SOURCES += \
 	smtc_modem_core/smtc_modem_crypto/smtc_modem_crypto.c
@@ -282,12 +367,14 @@ COMMON_C_INCLUDES +=  \
 	-Ismtc_modem_core/lr1mac/src\
 	-Ismtc_modem_core/lr1mac/src/services\
 	-Ismtc_modem_core/lr1mac/src/lr1mac_class_c\
+	-Ismtc_modem_core/lr1mac/src/lr1mac_class_b\
 	-Ismtc_modem_core/radio_planner/src\
 	-Ismtc_modem_core/smtc_modem_crypto\
 	-Ismtc_modem_core/smtc_modem_crypto/smtc_secure_element\
 	-Ismtc_modem_core/lorawan_api\
 	-Ismtc_modem_core/lr1mac/src/smtc_real/src\
-	-Ismtc_modem_hal\
+	-Ismtc_modem_hal
+
 
 
 #-----------------------------------------------------------------------------
@@ -342,7 +429,7 @@ vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
 #-----------------------------------------------------------------------------
 basic_modem:
 ifeq ($(RADIO),nc)
-	$(call echo_error,"No radio selected! Please specified the target radio using RADIO=sx128x or RADIO=sx1261 or RADIO=sx1262 or RADIO=lr1110")
+	$(call echo_error,"No radio selected! Please specified the target radio  using RADIO=radio_name option")
 else
 	$(MAKE) basic_modem_build
 endif 
@@ -354,6 +441,8 @@ basic_modem_build: $(BUILD_ROOT)/$(TARGET_MODEM).a
 ifneq ($(COVERAGE),no)
 	$(MAKE) $(COVERAGE_ARCHIVE)
 endif
+	$(SILENT) rm -rf $(BUILD_ROOT)/latest
+	$(SILENT) ln -s $(realpath $(BUILD_DIR_MODEM)) $(BUILD_ROOT)/latest
 	$(call success,$@ $<)
 
 

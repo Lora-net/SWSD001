@@ -43,6 +43,7 @@
 
 #include "smtc_hal.h"
 #include "apps_utilities.h"
+#include "smtc_modem_api_str.h"
 
 /*
  * -----------------------------------------------------------------------------
@@ -121,69 +122,46 @@ void modem_status_to_string( smtc_modem_status_mask_t modem_status )
 
 void modem_class_to_string( smtc_modem_class_t lorawan_class )
 {
-    if( lorawan_class == SMTC_MODEM_CLASS_A )
+    switch( lorawan_class )
     {
-        HAL_DBG_TRACE_MSG( "Class: A\n" );
-    }
-    else if( lorawan_class == SMTC_MODEM_CLASS_C )
+    case SMTC_MODEM_CLASS_A:
+    case SMTC_MODEM_CLASS_B:
+    case SMTC_MODEM_CLASS_C:
     {
-        HAL_DBG_TRACE_MSG( "Class: C\n" );
+        HAL_DBG_TRACE_PRINTF( "Class: %s\n", smtc_modem_class_to_str( lorawan_class ) );
+        break;
     }
-    else
+    default:
     {
         HAL_DBG_TRACE_WARNING( "Unknown Class\n\n" );
+    }
     }
 }
 
 void modem_region_to_string( smtc_modem_region_t region )
 {
-    if( region == SMTC_MODEM_REGION_EU_868 )
+    switch( region )
     {
-        HAL_DBG_TRACE_MSG( "Region: EU868\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_US_915 )
+    case SMTC_MODEM_REGION_EU_868:
+    case SMTC_MODEM_REGION_AS_923_GRP1:
+    case SMTC_MODEM_REGION_US_915:
+    case SMTC_MODEM_REGION_AU_915:
+    case SMTC_MODEM_REGION_CN_470:
+    case SMTC_MODEM_REGION_WW2G4:
+    case SMTC_MODEM_REGION_AS_923_GRP2:
+    case SMTC_MODEM_REGION_AS_923_GRP3:
+    case SMTC_MODEM_REGION_IN_865:
+    case SMTC_MODEM_REGION_KR_920:
+    case SMTC_MODEM_REGION_RU_864:
+    case SMTC_MODEM_REGION_CN_470_RP_1_0:
     {
-        HAL_DBG_TRACE_MSG( "Region: US915\n\n" );
+        HAL_DBG_TRACE_PRINTF( "Region: %s\n\n", smtc_modem_region_to_str( region ) );
+        break;
     }
-    else if( region == SMTC_MODEM_REGION_AS_923_GRP1 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: AS923_GRP1\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_AU_915 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: AU915\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_CN_470 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: CN470\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_AS_923_GRP2 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: AS923_GRP2\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_AS_923_GRP3 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: AS923_GRP3\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_IN_865 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: IN865\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_KR_920 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: KR920\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_RU_864 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: RU864\n\n" );
-    }
-    else if( region == SMTC_MODEM_REGION_CN_470_RP_1_0 )
-    {
-        HAL_DBG_TRACE_MSG( "Region: CN470_RP_1_0\n\n" );
-    }
-    else
+    default:
     {
         HAL_DBG_TRACE_WARNING( "Unknown Region\n\n" );
+    }
     }
 }
 

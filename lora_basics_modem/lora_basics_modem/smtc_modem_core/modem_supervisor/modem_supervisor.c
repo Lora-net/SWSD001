@@ -57,8 +57,14 @@
 #include "smtc_secure_element.h"
 
 // services
+#if defined( ADD_SMTC_FILE_UPLOAD )
 #include "file_upload.h"
+#endif  // ADD_SMTC_FILE_UPLOAD
+
+#if defined( ADD_SMTC_STREAM )
 #include "stream.h"
+#endif  // ADD_SMTC_STREAM
+
 #include "alc_sync.h"
 #include "smtc_clock_sync.h"
 
@@ -82,74 +88,112 @@
  */
 #define MIN( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
 
+/**
+ * @brief Math Abs macro
+ */
+#define ABS( N ) ( ( N < 0 ) ? ( -N ) : ( N ) )
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
 
 #if !defined( LR1110_MODEM_E )
-static lr1mac_states_t       LpState = LWPSTATE_IDLE;
-static stask_manager         task_manager;
-static user_rx_packet_type_t AvailableRxPacket                     = NO_LORA_RXPACKET_AVAILABLE;
-static bool                  is_pending_dm_status_payload_periodic = false;
-static bool                  is_pending_dm_status_payload_now      = false;
-static bool                  is_first_dm_after_join                = true;
-static bool                  send_task_update_needed               = false;
+static lr1mac_states_t LpState = LWPSTATE_IDLE;
+static stask_manager   task_manager;
+static bool            is_pending_dm_status_payload_periodic = false;
+static bool            is_pending_dm_status_payload_now      = false;
+static bool            is_first_dm_after_join                = true;
+static bool            send_task_update_needed               = false;
 
-static void ( *app_callback )( void )        = NULL;
-static alc_sync_ctx_t*   alc_sync_context    = NULL;
-static clock_sync_ctx_t* clock_sync_context  = NULL;
-static rose_t*           ROSE                = NULL;
-static file_upload_t*    file_upload_context = NULL;
+static void ( *app_callback )( void ) = NULL;
+
+#if defined( ADD_SMTC_ALC_SYNC )
+static alc_sync_ctx_t*   alc_sync_context   = NULL;
+static clock_sync_ctx_t* clock_sync_context = NULL;
+#endif  // ADD_SMTC_ALC_SYNC
+
+#if defined( ADD_SMTC_STREAM )
+static rose_t* ROSE = NULL;
+#endif  // ADD_SMTC_STREAM
+#if defined( ADD_SMTC_FILE_UPLOAD )
+
+static file_upload_t* file_upload_context = NULL;
+#endif  // ADD_SMTC_FILE_UPLOAD
 
 // Used for LoRaWAN Certification
 static uint8_t user_payload_length           = 10;
 static uint8_t user_payload[242]             = { 0 };
 static uint8_t user_port                     = 1;
 static bool    certification_data_is_pending = false;
+
+// Used for class B
+static bool class_b_bit = false;
 #else
 
 struct
 {
-    lr1mac_states_t       LpState;
-    stask_manager         task_manager;
-    user_rx_packet_type_t AvailableRxPacket;
-    bool                  is_pending_dm_status_payload_periodic;
-    bool                  is_pending_dm_status_payload_now;
-    bool                  is_first_dm_after_join;
-    bool                  send_task_update_needed;
+    lr1mac_states_t LpState;
+    stask_manager   task_manager;
+    bool            is_pending_dm_status_payload_periodic;
+    bool            is_pending_dm_status_payload_now;
+    bool            is_first_dm_after_join;
+    bool            send_task_update_needed;
     void ( *app_callback )( void );
+
+#if defined( ADD_SMTC_ALC_SYNC )
     alc_sync_ctx_t*   alc_sync_context;
     clock_sync_ctx_t* clock_sync_context;
+#endif  // ADD_SMTC_ALC_SYNC
+
+#if defined( ADD_SMTC_STREAM )
     rose_t*           ROSE;
+#endif  // ADD_SMTC_STREAM
+
+#if defined( ADD_SMTC_FILE_UPLOAD )
     file_upload_t*    file_upload_context;
+#endif  // ADD_SMTC_FILE_UPLOAD
 
     // Used for LoRaWAN Certification
     uint8_t user_payload_length;
     uint8_t user_payload[242];
     uint8_t user_port;
     bool    certification_data_is_pending;
+
+    // Used for class B
+    bool class_b_bit;
 } modem_supervisor_context;
 
 // clang-format off
 #define LpState                                 modem_supervisor_context.LpState
 #define task_manager                            modem_supervisor_context.task_manager
-#define AvailableRxPacket                       modem_supervisor_context.AvailableRxPacket
 #define is_pending_dm_status_payload_periodic   modem_supervisor_context.is_pending_dm_status_payload_periodic
 #define is_pending_dm_status_payload_now        modem_supervisor_context.is_pending_dm_status_payload_now
 #define is_first_dm_after_join                  modem_supervisor_context.is_first_dm_after_join
 #define send_task_update_needed                 modem_supervisor_context.send_task_update_needed
 #define app_callback                            modem_supervisor_context.app_callback
+
+#if defined( ADD_SMTC_ALC_SYNC )
 #define alc_sync_context                        modem_supervisor_context.alc_sync_context
 #define clock_sync_context                      modem_supervisor_context.clock_sync_context
+#endif  // ADD_SMTC_ALC_SYNC
+
+#if defined( ADD_SMTC_STREAM )
 #define ROSE                                    modem_supervisor_context.ROSE
+#endif  // ADD_SMTC_STREAM
+
+#if defined( ADD_SMTC_FILE_UPLOAD )
 #define file_upload_context                     modem_supervisor_context.file_upload_context
+#endif  // ADD_SMTC_FILE_UPLOAD
 
 // Used for LoRaWAN Certification
 #define user_payload_length                     modem_supervisor_context.user_payload_length
 #define user_payload                            modem_supervisor_context.user_payload
 #define user_port                               modem_supervisor_context.user_port
 #define certification_data_is_pending           modem_supervisor_context.certification_data_is_pending
+
+// Used for class B
+#define class_b_bit                             modem_supervisor_context.class_b_bit
 
 // clang-format on
 #endif
@@ -165,7 +209,9 @@ struct
  */
 static void certification_event_handler( void );
 
+static void check_class_b_to_generate_event( void );
 static void backoff_mobile_static( void );
+static void send_task_update( uint8_t event_type );
 
 /*
  * -----------------------------------------------------------------------------
@@ -176,39 +222,49 @@ void modem_supervisor_init( void ( *callback )( void ), radio_planner_t* rp,
                             smtc_modem_services_t* smtc_modem_services_ctx )
 {
     LpState                               = LWPSTATE_IDLE;
-    AvailableRxPacket                     = NO_LORA_RXPACKET_AVAILABLE;
     is_pending_dm_status_payload_periodic = true;  // Set to true to send at least the first DM after Join
     is_pending_dm_status_payload_now      = false;
     is_first_dm_after_join                = true;
     send_task_update_needed               = false;
     app_callback                          = callback;
-    alc_sync_context                      = &( smtc_modem_services_ctx->alc_sync_ctx );
-    clock_sync_context                    = &( smtc_modem_services_ctx->clock_sync_ctx );
-    ROSE                                  = &( smtc_modem_services_ctx->stream_ROSE_ctx );
-    file_upload_context                   = &( smtc_modem_services_ctx->file_upload_ctx );
+
+#if defined( ADD_SMTC_ALC_SYNC )
+    alc_sync_context   = &( smtc_modem_services_ctx->alc_sync_ctx );
+    clock_sync_context = &( smtc_modem_services_ctx->clock_sync_ctx );
+#endif  // ADD_SMTC_ALC_SYNC
+
+#if defined( ADD_SMTC_STREAM )
+    ROSE = &( smtc_modem_services_ctx->stream_ROSE_ctx );
+#endif  // ADD_SMTC_STREAM
+
+#if defined( ADD_SMTC_FILE_UPLOAD )
+    file_upload_context = &( smtc_modem_services_ctx->file_upload_ctx );
+#endif  // ADD_SMTC_FILE_UPLOAD
 
     // Used for LoRaWAN Certification
     user_payload_length = 10;
     memset( user_payload, 0, sizeof( user_payload ) );
     user_port                     = 1;
     certification_data_is_pending = false;
+    class_b_bit                   = false;
 
     lorawan_api_init( rp );
-
     lorawan_api_dr_strategy_set( STATIC_ADR_MODE );
-#if !defined( PERF_TEST_ENABLED )
-    // do not clear join status that was set to joined to allow perf testbench to trigger some modem send tx commands
     lorawan_api_join_status_clear( );
-#endif
+
     modem_context_init( );
     modem_event_init( );
     modem_supervisor_init_task( );
     modem_load_context( );
+
+#if defined( ADD_SMTC_ALC_SYNC )
     alc_sync_init( alc_sync_context );
     clock_sync_init( clock_sync_context, alc_sync_context );
-#if defined( LR1110_MODEM_E )
+#endif  // ADD_SMTC_ALC_SYNC
+
+#if defined( LR1110_MODEM_E ) && defined( ADD_SMTC_PATCH_UPDATE )
     frag_init( );
-#endif  // LR1110_MODEM_E
+#endif  // LR1110_MODEM_E && ADD_SMTC_PATCH_UPDATE
 
     set_modem_start_time_s( smtc_modem_hal_get_time_in_s( ) );
 
@@ -286,7 +342,7 @@ eTask_valid_t modem_supervisor_add_task( smodem_task* task )
 
 void modem_supervisor_launch_task( task_id_t id )
 {
-    lr1mac_states_t send_status = LWPSTATE_IDLE;
+    status_lorawan_t send_status = ERRORLORAWAN;
     switch( id )
     {
     case JOIN_TASK:
@@ -301,6 +357,9 @@ void modem_supervisor_launch_task( task_id_t id )
             lorawan_api_join( smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
         }
         break;
+
+    case SEND_TASK_EXTENDED_1:
+    case SEND_TASK_EXTENDED_2:
     case SEND_TASK: {
         send_status = lorawan_api_payload_send(
             task_manager.modem_task[id].fPort, task_manager.modem_task[id].fPort_present,
@@ -308,7 +367,7 @@ void modem_supervisor_launch_task( task_id_t id )
             ( task_manager.modem_task[id].PacketType == TX_CONFIRMED ) ? CONF_DATA_UP : UNCONF_DATA_UP,
             smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
 
-        if( send_status == LWPSTATE_SEND )
+        if( send_status == OKLORAWAN )
         {
             send_task_update_needed = true;
             SMTC_MODEM_HAL_TRACE_PRINTF(
@@ -323,8 +382,6 @@ void modem_supervisor_launch_task( task_id_t id )
         }
         break;
     }
-    case SEND_AT_TIME_TASK:
-        break;
 
     case DM_TASK:
         if( get_join_state( ) == MODEM_JOINED )
@@ -349,9 +406,12 @@ void modem_supervisor_launch_task( task_id_t id )
                 SMTC_MODEM_HAL_TRACE_PRINTF( " info bit field = %x\n", info_bitfield_periodictmp );
                 info_bitfield_periodic =
                     info_bitfield_periodictmp +
-                    ( ( ( info_bitfield_periodictmp & ( 1 << e_inf_rstcount ) ) == 0 ) ? ( 1 << e_inf_rstcount ) : 0 ) +
-                    ( ( ( info_bitfield_periodictmp & ( 1 << e_inf_session ) ) == 0 ) ? ( 1 << e_inf_session ) : 0 ) +
-                    ( ( ( info_bitfield_periodictmp & ( 1 << e_inf_firmware ) ) == 0 ) ? ( 1 << e_inf_firmware ) : 0 );
+                    ( ( ( info_bitfield_periodictmp & ( 1 << DM_INFO_RSTCOUNT ) ) == 0 ) ? ( 1 << DM_INFO_RSTCOUNT )
+                                                                                         : 0 ) +
+                    ( ( ( info_bitfield_periodictmp & ( 1 << DM_INFO_SESSION ) ) == 0 ) ? ( 1 << DM_INFO_SESSION )
+                                                                                        : 0 ) +
+                    ( ( ( info_bitfield_periodictmp & ( 1 << DM_INFO_FIRMWARE ) ) == 0 ) ? ( 1 << DM_INFO_FIRMWARE )
+                                                                                         : 0 );
 
                 modem_set_dm_info_bitfield_periodic( info_bitfield_periodic );
                 SMTC_MODEM_HAL_TRACE_PRINTF( " info bit field = %x\n", info_bitfield_periodic );
@@ -362,7 +422,7 @@ void modem_supervisor_launch_task( task_id_t id )
                     lorawan_api_payload_send( get_modem_dm_port( ), true, payload, payload_length, UNCONF_DATA_UP,
                                               smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
 
-                if( send_status == LWPSTATE_SEND )
+                if( send_status == OKLORAWAN )
                 {
                     if( is_pending_dm_status_payload_periodic == false )
                     {
@@ -388,7 +448,7 @@ void modem_supervisor_launch_task( task_id_t id )
                         lorawan_api_payload_send( get_modem_dm_port( ), true, payload, payload_length, UNCONF_DATA_UP,
                                                   smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
 
-                    if( send_status == LWPSTATE_SEND )
+                    if( send_status == OKLORAWAN )
                     {
                         SMTC_MODEM_HAL_TRACE_ARRAY( "DM ", payload, payload_length );
                         SMTC_MODEM_HAL_TRACE_PRINTF( " on Port %d\n", get_modem_dm_port( ) );
@@ -411,7 +471,7 @@ void modem_supervisor_launch_task( task_id_t id )
 
             send_status = lorawan_api_payload_send( get_modem_dm_port( ), true, payload, payload_length, UNCONF_DATA_UP,
                                                     smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
-            if( send_status == LWPSTATE_SEND )
+            if( send_status == OKLORAWAN )
             {
                 SMTC_MODEM_HAL_TRACE_ARRAY( "DM Req ", payload, payload_length );
                 SMTC_MODEM_HAL_TRACE_PRINTF( " on Port %d\n", get_modem_dm_port( ) );
@@ -428,7 +488,7 @@ void modem_supervisor_launch_task( task_id_t id )
             uint8_t payload[CRASH_LOG_SIZE + 1];
             uint8_t payload_length = CRASH_LOG_SIZE + 1;
             // first set the dm byte corresponding to crashlog
-            payload[0] = e_inf_crashlog;
+            payload[0] = DM_INFO_CRASHLOG;
             // get the stored crashlog
             smtc_modem_hal_restore_crashlog( &payload[1] );
 
@@ -437,13 +497,14 @@ void modem_supervisor_launch_task( task_id_t id )
             payload_length      = ( payload_length > max_payload ) ? max_payload : payload_length;
             send_status = lorawan_api_payload_send( get_modem_dm_port( ), true, payload, payload_length, UNCONF_DATA_UP,
                                                     smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
-            if( send_status == LWPSTATE_SEND )
+            if( send_status == OKLORAWAN )
             {
                 // crashlog will be sent => set availability to false
                 smtc_modem_hal_set_crashlog_status( false );
             }
         }
         break;
+#if defined( ADD_SMTC_FILE_UPLOAD )
     case FILE_UPLOAD_TASK: {
         int32_t file_upload_chunk_size         = 0;
         uint8_t file_upload_chunk_payload[242] = { 0 };
@@ -458,9 +519,10 @@ void modem_supervisor_launch_task( task_id_t id )
             SMTC_MODEM_HAL_TRACE_ERROR( "FileUpload not init \n" );
             break;
         }
+        uint32_t max_payload_size = lorawan_api_next_max_payload_length_get( );
         file_upload_chunk_size =
             file_upload_get_fragment( file_upload_context, file_upload_chunk_payload,
-                                      lorawan_api_next_max_payload_length_get( ), lorawan_api_fcnt_up_get( ) );
+                                      ( max_payload_size > 100 ) ? 100 : max_payload_size, lorawan_api_fcnt_up_get( ) );
         if( file_upload_chunk_size > 0 )
         {
             send_status =
@@ -469,13 +531,17 @@ void modem_supervisor_launch_task( task_id_t id )
         }
         else
         {
-            SMTC_MODEM_HAL_TRACE_WARNING( "File upload finished without server confirmation \n" );
-            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_UPLOADDONE, 0x00 );
-            set_modem_status_file_upload( false );
-            modem_set_upload_state( MODEM_UPLOAD_FINISHED );
+            // something prevents fragment to be constructed (max payload size < 11 due to mac answers in fopts and
+            // shall be uplinked first)
+            send_status = lorawan_api_payload_send( 0, false, NULL, 0, UNCONF_DATA_UP,
+                                                    smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
         }
+
         break;
     }
+#endif  // ADD_SMTC_FILE_UPLOAD
+
+#if defined( ADD_SMTC_STREAM )
     case STREAM_TASK: {
         uint8_t              stream_payload[242] = { 0 };
         uint8_t              fragment_size;
@@ -499,7 +565,7 @@ void modem_supervisor_launch_task( task_id_t id )
         // check first if stream runs on dm port and if yes add dm code
         if( get_modem_dm_port( ) == modem_get_stream_port( ) )
         {
-            stream_payload[tx_buff_offset] = e_inf_stream;
+            stream_payload[tx_buff_offset] = DM_INFO_STREAM;
             tx_buff_offset++;
         }
 
@@ -522,6 +588,7 @@ void modem_supervisor_launch_task( task_id_t id )
         }
         break;
     }
+#endif  // ADD_SMTC_STREAM
     case MUTE_TASK: {
         if( get_modem_muted( ) == MODEM_TEMPORARY_MUTE )
         {
@@ -530,16 +597,16 @@ void modem_supervisor_launch_task( task_id_t id )
         break;
     }
     case RETRIEVE_DL_TASK: {
-        s_dm_retrieve_pending_dl_t retrieve;
+        dm_dl_opportunities_config_t retrieve;
         get_dm_retrieve_pending_dl( &retrieve );
         if( retrieve.up_count > 0 )
         {
-            send_status = lorawan_api_payload_send(
-                get_modem_dm_port( ), true, task_manager.modem_task[id].dataIn, task_manager.modem_task[id].sizeIn,
-                task_manager.modem_task[id].PacketType, smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
+            send_status = lorawan_api_payload_send( 0, false, NULL, 0, UNCONF_DATA_UP,
+                                                    smtc_modem_hal_get_time_in_ms( ) + MODEM_TASK_DELAY_MS );
         }
         break;
     }
+#if defined( ADD_SMTC_ALC_SYNC )
     case CLOCK_SYNC_TIME_REQ_TASK: {
         if( lorawan_api_modem_certification_is_enabled( ) == true )
         {
@@ -558,7 +625,7 @@ void modem_supervisor_launch_task( task_id_t id )
             break;
         }
         uint8_t  max_payload = lorawan_api_next_max_payload_length_get( );
-        uint8_t  tx_buffer_out[ALC_SYNC_TX_PAYLOAD_SIZE_MAX + 1];  // +1 is the e_inf_alcsync ID
+        uint8_t  tx_buffer_out[ALC_SYNC_TX_PAYLOAD_SIZE_MAX + 1];  // +1 is the DM_INFO_ALCSYNC ID
         uint8_t  tx_buffer_length_out = 0;
         uint32_t target_send_time     = smtc_modem_hal_get_time_in_s( ) + 2;
         uint8_t  tx_buff_offset       = 0;
@@ -566,7 +633,7 @@ void modem_supervisor_launch_task( task_id_t id )
         // check first if alc_sync runs on dm port and if yes add dm code
         if( get_modem_dm_port( ) == clock_sync_get_alcsync_port( clock_sync_context ) )
         {
-            tx_buffer_out[tx_buff_offset] = e_inf_alcsync;
+            tx_buffer_out[tx_buff_offset] = DM_INFO_ALCSYNC;
             tx_buff_offset++;
         }
 
@@ -585,16 +652,24 @@ void modem_supervisor_launch_task( task_id_t id )
             send_status = lorawan_api_payload_send_at_time( clock_sync_get_alcsync_port( clock_sync_context ), true,
                                                             tx_buffer_out, tx_buffer_length_out, UNCONF_DATA_UP,
                                                             target_send_time * 1000 );
+            // reset alcsync reception bool
+            alc_sync_context->is_sync_dl_received = false;
         }
         break;
     }
+#endif  // ADD_SMTC_ALC_SYNC
     case LINK_CHECK_REQ_TASK:
         lorawan_api_send_stack_cid_req( LINK_CHECK_REQ );
         break;
     case DEVICE_TIME_REQ_TASK:
+        SMTC_MODEM_HAL_TRACE_WARNING( "DEVICE TIME REQUEST\n" );
         lorawan_api_send_stack_cid_req( DEVICE_TIME_REQ );
         break;
-#if defined( LR1110_MODEM_E )
+    case PING_SLOT_INFO_REQ_TASK:
+        SMTC_MODEM_HAL_TRACE_WARNING( "PING SLOT REQUEST\n" );
+        lorawan_api_send_stack_cid_req( PING_SLOT_INFO_REQ );
+        break;
+#if defined( LR1110_MODEM_E ) && defined( ADD_SMTC_PATCH_UPDATE )
     case FRAG_TASK: {
         uint8_t max_payload = lorawan_api_next_max_payload_length_get( );
 
@@ -611,7 +686,7 @@ void modem_supervisor_launch_task( task_id_t id )
         }
         break;
     }
-#endif  // LR1110_MODEM_E
+#endif  // LR1110_MODEM_E && ADD_SMTC_PATCH_UPDATE
     case USER_TASK: {
         send_status = lorawan_api_payload_send(
             get_modem_dm_port( ), true, task_manager.modem_task[id].dataIn, task_manager.modem_task[id].sizeIn,
@@ -640,7 +715,7 @@ void modem_supervisor_launch_task( task_id_t id )
         break;
     }
 
-    if( send_status == LWPSTATE_SEND )
+    if( send_status == OKLORAWAN )
     {
         decrement_dm_retrieve_pending_dl( );
     }
@@ -666,6 +741,7 @@ void modem_supervisor_update_task( task_id_t id )
             // reset dm tag number to prevent using wrong id
             modem_context_reset_dm_tag_number( );
 
+#if defined( ADD_SMTC_ALC_SYNC )
             // If clock sync service activated => initiate a new request
             if( clock_sync_is_enabled( clock_sync_context ) == true )
             {
@@ -673,6 +749,7 @@ void modem_supervisor_update_task( task_id_t id )
                                                                smtc_modem_hal_get_random_nb_in_range( 0, 5 ) );
                 clock_sync_reset_nb_time_req( clock_sync_context );
             }
+#endif  // ADD_SMTC_ALC_SYNC
             if( smtc_modem_hal_get_crashlog_status( ) == true )
             {
                 modem_supervisor_add_task_crash_log( DM_PERIOD_AFTER_JOIN + 30 +
@@ -719,47 +796,42 @@ void modem_supervisor_update_task( task_id_t id )
             modem_supervisor_add_task_dm_status_now( );
         }
         break;
+
     case SEND_TASK:
-        if( send_task_update_needed == true )
+        send_task_update( SMTC_MODEM_EVENT_TXDONE );
+        break;
+
+    case SEND_TASK_EXTENDED_1:
+        ( modem_get_extended_callback( 1 ) )( );
+        break;
+
+    case SEND_TASK_EXTENDED_2:
+        ( modem_get_extended_callback( 2 ) )( );
+        break;
+#if defined( ADD_SMTC_FILE_UPLOAD )
+    case FILE_UPLOAD_TASK: {
+        modem_upload_state_t modem_upload_state = modem_get_upload_state( );
+        if( modem_upload_state == MODEM_UPLOAD_ON_GOING )
         {
-            if( lorawan_api_rx_ack_bit_get( ) == 1 )
+            if( ( file_upload_is_data_remaining( file_upload_context ) == true ) )
             {
-                increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_TXDONE, MODEM_TX_SUCCESS_WITH_ACK );
+                // There is still upload that need to be sent => add a new task
+                modem_supervisor_add_task_file_upload( file_upload_get_average_delay_in_s( file_upload_context ) );
             }
             else
             {
-                increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_TXDONE, MODEM_TX_SUCCESS );
+                // Nothing left to be sent => abort upload and generate event
+                SMTC_MODEM_HAL_TRACE_WARNING( "File upload ended without server confirmation \n" );
+                increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_UPLOADDONE, 0x00 );
+                set_modem_status_file_upload( false );
+                modem_set_upload_state( MODEM_UPLOAD_FINISHED );
             }
-        }
-        else
-        {
-            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_TXDONE, MODEM_TX_FAILED );
-        }
-
-        // Re-enable the duty cycle in case of Emergency Tx was sent and dutycycle not disabled by host
-        if( modem_get_duty_cycle_disabled_by_host( ) == true )
-        {
-            lorawan_api_duty_cycle_enable_set( SMTC_DTC_FULL_DISABLED );
-        }
-        else
-        {
-            lorawan_api_duty_cycle_enable_set( SMTC_DTC_ENABLED );
-        }
-        break;
-    case FILE_UPLOAD_TASK: {
-        modem_upload_state_t modem_upload_state = modem_get_upload_state( );
-        // check if the file upload is still ongoing
-        if( modem_upload_state == MODEM_UPLOAD_ON_GOING )
-        {
-            modem_supervisor_add_task_file_upload( file_upload_get_average_delay_in_s( file_upload_context ) );
-        }
-        else if( modem_upload_state == MODEM_UPLOAD_FINISHED )
-        {
-            // Current file upload is finished, modem status can be updated accordingly
-            set_modem_status_file_upload( false );
         }
         break;
     }
+#endif  // ADD_SMTC_FILE_UPLOAD
+
+#if defined( ADD_SMTC_STREAM )
     case STREAM_TASK: {
         // SMTC_MODEM_HAL_TRACE_MSG( "Supervisor update STREAM_TASK\n" );
         if( stream_data_pending( ROSE ) )
@@ -774,6 +846,7 @@ void modem_supervisor_update_task( task_id_t id )
         }
         break;
     }
+#endif  // ADD_SMTC_STREAM
     case MUTE_TASK: {
         if( get_modem_muted( ) == MODEM_TEMPORARY_MUTE )
         {
@@ -782,7 +855,7 @@ void modem_supervisor_update_task( task_id_t id )
         break;
     }
     case RETRIEVE_DL_TASK: {
-        s_dm_retrieve_pending_dl_t retrieve;
+        dm_dl_opportunities_config_t retrieve;
         get_dm_retrieve_pending_dl( &retrieve );
         if( retrieve.up_count > 0 )
         {
@@ -791,23 +864,26 @@ void modem_supervisor_update_task( task_id_t id )
 
         break;
     }
+#if defined( ADD_SMTC_ALC_SYNC )
     case CLOCK_SYNC_TIME_REQ_TASK: {
+        clock_sync_callback( clock_sync_context, 0 );  // TODO change 0
+
         if( clock_sync_context->sync_service_type == CLOCK_SYNC_ALC )
         {
-            clock_sync_callback( clock_sync_context, 0 );  // TODO change 0
-        }
-
-        if( clock_sync_is_time_valid( clock_sync_context ) == false )
-        {
-            s_dm_retrieve_pending_dl_t retrieve;
-            get_dm_retrieve_pending_dl( &retrieve );
-            if( retrieve.up_count == 0 )
+            // Answer with time sync not received, create a new downlink opportunities
+            if( clock_sync_is_time_valid( clock_sync_context ) == false )
             {
-                retrieve.up_delay = smtc_modem_hal_get_random_nb_in_range( 3, 8 );
-                set_dm_retrieve_pending_dl( 1, retrieve.up_delay );
-                modem_supervisor_add_task_retrieve_dl( retrieve.up_delay );
+                dm_dl_opportunities_config_t retrieve;
+                get_dm_retrieve_pending_dl( &retrieve );
+                if( retrieve.up_count == 0 )
+                {
+                    retrieve.up_delay = smtc_modem_hal_get_random_nb_in_range( 3, 8 );
+                    set_dm_retrieve_pending_dl( 1, retrieve.up_delay );
+                    modem_supervisor_add_task_retrieve_dl( retrieve.up_delay );
+                }
             }
         }
+
         break;
     }
     case ALC_SYNC_ANS_TASK:
@@ -816,6 +892,7 @@ void modem_supervisor_update_task( task_id_t id )
             modem_supervisor_add_task_alc_sync_ans( smtc_modem_hal_get_random_nb_in_range( 128, 150 ) );
         }
         break;
+#endif  // ADD_SMTC_ALC_SYNC
 
     case LINK_CHECK_REQ_TASK: {
         uint8_t margin;
@@ -848,10 +925,22 @@ void modem_supervisor_update_task( task_id_t id )
         increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_TIME, time_updated_status );
         break;
     }
+    case PING_SLOT_INFO_REQ_TASK: {
+        if( lorawan_api_get_ping_slot_info_req_status( ) == OKLORAWAN )
+        {
+            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_CLASS_B_PING_SLOT_INFO,
+                                              SMTC_MODEM_EVENT_CLASS_B_PING_SLOT_ANSWERED );
+        }
+        else
+        {
+            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_CLASS_B_PING_SLOT_INFO,
+                                              SMTC_MODEM_EVENT_CLASS_B_PING_SLOT_NOT_ANSWERED );
+        }
+        break;
+    }
     default:
         break;
     }
-    AvailableRxPacket = NO_LORA_RXPACKET_AVAILABLE;
 }
 
 uint32_t modem_supervisor_scheduler( void )
@@ -947,23 +1036,18 @@ uint32_t modem_supervisor_engine( void )
             }
         }
     }
-    backoff_mobile_static( );
 
     // case Lorawan stack already in use
     LpState = lorawan_api_state_get( );
 
     if( ( LpState != LWPSTATE_IDLE ) && ( LpState != LWPSTATE_ERROR ) && ( LpState != LWPSTATE_INVALID ) )
     {
-        LpState = lorawan_api_process( &AvailableRxPacket );
-        if( ( AvailableRxPacket != NO_LORA_RXPACKET_AVAILABLE ) && ( LpState == LWPSTATE_TX_WAIT ) )
-        {  // there is an applicative downlink and a nwk frame to send so lr1mac is in the state tx wait
-            if( task_manager.next_task_id != IDLE_TASK )
-            {
-                // modem_supervisor_update_downlink_frame( );
-            }
-        }
+        LpState = lorawan_api_process( );
         return ( CALL_LR1MAC_PERIOD_MS );
     }
+
+    backoff_mobile_static( );
+    check_class_b_to_generate_event( );
 
     // Call modem_supervisor_update_task to update asynchronous messages number
     if( task_manager.next_task_id != IDLE_TASK )
@@ -1023,6 +1107,26 @@ uint32_t modem_supervisor_engine( void )
     return ( sleep_time );
 }
 
+void check_class_b_to_generate_event( void )
+{
+    bool class_b_bit_stack = lorawan_api_get_class_b_status( );
+
+    if( class_b_bit != class_b_bit_stack )
+    {
+        class_b_bit = class_b_bit_stack;
+
+        dm_dl_opportunities_config_t retrieve;
+        get_dm_retrieve_pending_dl( &retrieve );
+        if( retrieve.up_count == 0 )
+        {
+            set_dm_retrieve_pending_dl( 1, retrieve.up_delay );
+        }
+        modem_supervisor_add_task_retrieve_dl( 1 );
+
+        increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_CLASS_B_STATUS, class_b_bit );
+    }
+}
+
 void backoff_mobile_static( void )
 {
     uint16_t                 nb_usr_adr_mobile_timeout;
@@ -1031,7 +1135,7 @@ void backoff_mobile_static( void )
 
     usr_adr_profile                   = get_modem_adr_profile( );
     nb_usr_adr_mobile_timeout         = modem_get_adr_mobile_timeout_config( );
-    nb_current_usr_adr_mobile_timeout = modem_get_current_adr_mobile_count( );
+    nb_current_usr_adr_mobile_timeout = lorawan_api_get_current_no_rx_packet_in_mobile_mode_cnt( );
 
     // if nb_usr_adr_mobile_timeout = 0 the feature switch from mobile to static mode isn't activated
     if( ( ( nb_current_usr_adr_mobile_timeout > nb_usr_adr_mobile_timeout ) &&
@@ -1052,12 +1156,12 @@ void backoff_mobile_static( void )
 uint8_t modem_supervisor_update_downlink_frame( uint8_t* data, uint8_t data_length, lr1mac_down_metadata_t* metadata,
                                                 bool ack_requested )
 {
-    s_modem_dwn_t dwnframe;
+    modem_downlink_msg_t dwnframe;
 
     // Class C Downlink Confirmed can trig a dl retrieve task to acked the frame
     if( ack_requested == true )
     {
-        s_dm_retrieve_pending_dl_t retrieve;
+        dm_dl_opportunities_config_t retrieve;
         get_dm_retrieve_pending_dl( &retrieve );
         if( retrieve.up_count == 0 )
         {
@@ -1068,39 +1172,74 @@ uint8_t modem_supervisor_update_downlink_frame( uint8_t* data, uint8_t data_leng
 
     set_modem_downlink_frame( data, data_length, metadata );
     get_modem_downlink_frame( &dwnframe );
-    if( dwnframe.port == get_modem_dm_port( ) )
+    if( metadata->rx_window == RECEIVE_ON_RXBEACON )
+    {
+        return 1;
+    }
+    else if( dwnframe.port == get_modem_dm_port( ) )
     {
         dm_downlink( dwnframe.data, dwnframe.length );
     }
+#if defined( ADD_SMTC_ALC_SYNC )
     else if( dwnframe.port == clock_sync_get_alcsync_port( clock_sync_context ) )
     {
-        uint8_t alc_sync_status = alc_sync_parser( alc_sync_context, dwnframe.data, dwnframe.length );
-
-        if( ( ( alc_sync_status >> ALC_SYNC_APP_TIME_ANS ) & 0x1 ) == 1 )
+        if( ( metadata->rx_window == RECEIVE_ON_RX1 ) || ( metadata->rx_window == RECEIVE_ON_RX2 ) ||
+            ( metadata->rx_window == RECEIVE_ON_RXB ) || ( metadata->rx_window == RECEIVE_ON_RXC ) )
         {
-            increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_TIME, 1 );
+            uint8_t alc_sync_status = alc_sync_parser( alc_sync_context, dwnframe.data, dwnframe.length );
 
-            // Remove all alc sync task.
-            modem_supervisor_remove_task_clock_sync( );
-
-            modem_supervisor_add_task_clock_sync_time_req( clock_sync_get_interval_second( clock_sync_context ) +
-                                                           smtc_modem_hal_get_signed_random_nb_in_range( -30, 30 ) );
-        }
-
-        if( alc_sync_status & ( ~( 1 << ALC_SYNC_APP_TIME_ANS ) ) )
-        {
-            if( ( ( alc_sync_status >> ALC_SYNC_DEVICE_APP_TIME_PERIODICITY_REQ ) & 0x1 ) == 1 )
+            if( ( ( alc_sync_status >> ALC_SYNC_APP_TIME_ANS ) & 0x1 ) == 1 )
             {
-                // If periodic time request is configured, add task to handle it
-                modem_supervisor_add_task_clock_sync_time_req(
-                    clock_sync_get_interval_second( clock_sync_context ) +
-                    smtc_modem_hal_get_signed_random_nb_in_range( -30, 30 ) );
+                // an alcsync dl with time was received => update flag
+                alc_sync_context->is_sync_dl_received = true;
+
+                increment_asynchronous_msgnumber( SMTC_MODEM_EVENT_TIME, SMTC_MODEM_EVENT_TIME_VALID );
+
+                // Remove all alc sync task.
+                modem_supervisor_remove_task_clock_sync( );
+
+                if( clock_sync_is_enabled( clock_sync_context ) == true )
+                {
+                    int32_t tmp_rand = 0;
+
+                    uint32_t tmp_delay = MIN( clock_sync_get_interval_second( clock_sync_context ),
+                                              clock_sync_get_time_left_connection_lost( clock_sync_context ) );
+                    do
+                    {
+                        tmp_rand = smtc_modem_hal_get_signed_random_nb_in_range( -30, 30 );
+                    } while( ( tmp_rand < 0 ) && ( ABS( tmp_rand ) > tmp_delay ) );
+
+                    modem_supervisor_add_task_clock_sync_time_req( tmp_delay + tmp_rand );
+                }
             }
-            // When a request requiring an answer is requested, add task to handle it
-            modem_supervisor_add_task_alc_sync_ans( 1 );
+
+            if( alc_sync_status & ( ~( 1 << ALC_SYNC_APP_TIME_ANS ) ) )
+            {
+                if( ( ( alc_sync_status >> ALC_SYNC_DEVICE_APP_TIME_PERIODICITY_REQ ) & 0x1 ) == 1 )
+                {
+                    if( clock_sync_is_enabled( clock_sync_context ) == true )
+                    {
+                        int32_t tmp_rand = 0;
+
+                        // If periodic time request is configured, add task to handle it
+                        uint32_t tmp_delay = MIN( clock_sync_get_interval_second( clock_sync_context ),
+                                                  clock_sync_get_time_left_connection_lost( clock_sync_context ) );
+                        do
+                        {
+                            tmp_rand = smtc_modem_hal_get_signed_random_nb_in_range( -30, 30 );
+                        } while( ( tmp_rand < 0 ) && ( ABS( tmp_rand ) > tmp_delay ) );
+
+                        modem_supervisor_add_task_clock_sync_time_req( tmp_delay + tmp_rand );
+                    }
+                }
+                // When a request requiring an answer is requested, add task to handle it
+                modem_supervisor_add_task_alc_sync_ans( 1 );
+            }
         }
     }
-#if defined( LR1110_MODEM_E )
+#endif  // ADD_SMTC_ALC_SYNC
+
+#if defined( LR1110_MODEM_E ) && defined( ADD_SMTC_PATCH_UPDATE )
     else if( dwnframe.port == get_modem_frag_port( ) )
     {
         int8_t frag_status = frag_parser( dwnframe.data, dwnframe.length );
@@ -1118,7 +1257,7 @@ uint8_t modem_supervisor_update_downlink_frame( uint8_t* data, uint8_t data_leng
             // Nothing to do
         }
     }
-#endif  // LR1110_MODEM_E
+#endif  // LR1110_MODEM_E && ADD_SMTC_PATCH_UPDATE
     else
     {
         return 1;
@@ -1150,7 +1289,7 @@ static void certification_event_handler( void )
         // Read modem event
         smtc_modem_get_event( &current_event, &event_pending_count );
 
-        SMTC_MODEM_HAL_TRACE_WARNING( "Event %u \n", current_event.event_type );
+        SMTC_MODEM_HAL_TRACE_WARNING( "Event 0x%x\n", current_event.event_type );
         switch( current_event.event_type )
         {
         case SMTC_MODEM_EVENT_RESET:
@@ -1189,6 +1328,9 @@ static void certification_event_handler( void )
 
             // Disable the duty cycle when LoRaWAN certification mode is enabled
             smtc_modem_test_duty_cycle_app_activate( false );
+
+            // Enable push class B beacon to user fifo
+            lorawan_api_set_status_push_network_downlink_to_user( true );
         }
         break;
 
@@ -1202,7 +1344,6 @@ static void certification_event_handler( void )
                     new_certification_cmd = 2;
                 }
                 break;
-
             case SMTC_MODEM_EVENT_TXDONE_CONFIRMED:
                 // ACK downlink must be count for Certification Mode
                 if( lorawan_api_certification_is_enabled( ) == true )
@@ -1221,37 +1362,39 @@ static void certification_event_handler( void )
             break;
 
         case SMTC_MODEM_EVENT_DOWNDATA: {
-            rx_port         = current_event.event_data.downdata.fport;
             rx_payload_size = ( uint8_t ) current_event.event_data.downdata.length;
             memcpy( rx_payload, current_event.event_data.downdata.data, rx_payload_size );
             SMTC_MODEM_HAL_TRACE_ARRAY( "DOWNDATA", rx_payload, rx_payload_size );
-            SMTC_MODEM_HAL_TRACE_PRINTF( "on port %u\n", rx_port );
 
-            if( ( rx_port == 224 ) || ( lorawan_api_certification_is_enabled( ) == true ) )
+            if( current_event.event_data.downdata.window != SMTC_MODEM_EVENT_DOWNDATA_WINDOW_RXBEACON )
             {
-                new_certification_cmd = 1;
+                rx_port = current_event.event_data.downdata.fport;
+                SMTC_MODEM_HAL_TRACE_PRINTF( "on port %u\n", rx_port );
+                if( ( rx_port == 224 ) || ( lorawan_api_certification_is_enabled( ) == true ) )
+                {
+                    new_certification_cmd = 1;
+                }
             }
             break;
         }
         break;
-
+#if defined( ADD_SMTC_FILE_UPLOAD )
         case SMTC_MODEM_EVENT_UPLOADDONE:
             break;
-
+#endif  // ADD_SMTC_FILE_UPLOAD
         case SMTC_MODEM_EVENT_SETCONF:
             break;
 
         case SMTC_MODEM_EVENT_MUTE:
             break;
 
+#if defined( ADD_SMTC_STREAM )
         case SMTC_MODEM_EVENT_STREAMDONE:
             break;
+#endif  // ADD_SMTC_STREAM
 
         case SMTC_MODEM_EVENT_JOINFAIL:
             SMTC_MODEM_HAL_TRACE_WARNING( "Join failed \n" );
-            break;
-
-        case SMTC_MODEM_EVENT_TIME:
             break;
 
         case SMTC_MODEM_EVENT_TIMEOUT_ADR_CHANGED:
@@ -1260,6 +1403,38 @@ static void certification_event_handler( void )
         case SMTC_MODEM_EVENT_NEW_LINK_ADR:
             break;
 
+        case SMTC_MODEM_EVENT_TIME:
+        case SMTC_MODEM_EVENT_CLASS_B_PING_SLOT_INFO:
+            if( lorawan_api_certification_get_requested_class( ) == LORAWAN_CERTIFICATION_CLASS_B )
+            {
+                if( ( lorawan_api_get_ping_slot_info_req_status( ) == OKLORAWAN ) &&
+#if defined( ADD_SMTC_ALC_SYNC )
+                    ( clock_sync_is_time_valid( clock_sync_context ) == true ) )
+#else   // ADD_SMTC_ALC_SYNC
+                    ( lorawan_api_is_time_valid( ) == true ) )
+#endif  // ADD_SMTC_ALC_SYNC
+                {
+                    SMTC_MODEM_HAL_TRACE_PRINTF( "Certif enable classB\n" );
+                    lorawan_api_class_b_enabled( true );
+                }
+                else
+                {
+                    SMTC_MODEM_HAL_TRACE_PRINTF( "Certif classB could not be enabled\n" );
+#if defined( ADD_SMTC_ALC_SYNC )
+                    if( clock_sync_is_time_valid( clock_sync_context ) == false )
+#else   // ADD_SMTC_ALC_SYNC
+                    if( lorawan_api_is_time_valid( ) == false )
+#endif  // ADD_SMTC_ALC_SYNC
+                    {
+                        modem_supervisor_add_task_device_time_req( 1 );
+                    }
+                    if( lorawan_api_get_ping_slot_info_req_status( ) != OKLORAWAN )
+                    {
+                        modem_supervisor_add_task_ping_slot_info_req( 2 );
+                    }
+                }
+            }
+            break;
         default:
             SMTC_MODEM_HAL_TRACE_ERROR( "Unknown event %u\n", current_event.event_type );
             break;
@@ -1279,12 +1454,15 @@ static void certification_event_handler( void )
         case LORAWAN_CERTIFICATION_RET_CERTIF_UL:
             break;
         case LORAWAN_CERTIFICATION_RET_LINK_CHECK:
+            is_request_tx = false;
             // lorawan_api_send_stack_cid_req( LINK_CHECK_REQ );
             break;
         case LORAWAN_CERTIFICATION_RET_DEVICE_TIME:
+            is_request_tx = false;
             // lorawan_api_send_stack_cid_req( DEVICE_TIME_REQ );
             break;
         case LORAWAN_CERTIFICATION_RET_PING_SLOT:
+            is_request_tx = false;
             // lorawan_api_send_stack_cid_req( PING_SLOT_INFO_REQ );
             break;
         case LORAWAN_CERTIFICATION_RET_TX_CW: {
@@ -1296,6 +1474,39 @@ static void certification_event_handler( void )
             smtc_modem_alarm_start_timer( timeout );
             smtc_modem_test_start( );
             smtc_modem_test_tx_cw( frequency, tx_power );
+            break;
+        }
+        case LORAWAN_CERTIFICATION_RET_SWITCH_CLASS: {
+            lorawan_certification_class_t certif_class = lorawan_api_certification_get_requested_class( );
+            if( certif_class == LORAWAN_CERTIFICATION_CLASS_A )
+            {
+                lorawan_api_class_b_enabled( false );
+                lorawan_api_class_c_enabled( false );
+            }
+            else if( certif_class == LORAWAN_CERTIFICATION_CLASS_B )
+            {
+                lorawan_api_class_c_enabled( false );
+
+#if defined( ADD_SMTC_ALC_SYNC )
+                if( clock_sync_is_time_valid( clock_sync_context ) == false )
+#else   // ADD_SMTC_ALC_SYNC
+                if( lorawan_api_is_time_valid( ) == false )
+#endif  // ADD_SMTC_ALC_SYNC
+                {
+                    modem_supervisor_add_task_device_time_req( 0 );
+                    // modem_supervisor_add_task_clock_sync_time_req( 0 );
+                }
+                if( lorawan_api_get_ping_slot_info_req_status( ) != OKLORAWAN )
+                {
+                    modem_supervisor_add_task_ping_slot_info_req( 0 );
+                }
+            }
+            else if( certif_class == LORAWAN_CERTIFICATION_CLASS_C )
+            {
+                lorawan_api_class_b_enabled( false );
+                lorawan_api_class_c_enabled( true );
+            }
+
             break;
         }
         case LORAWAN_CERTIFICATION_RET_NOTHING:
@@ -1315,7 +1526,23 @@ static void certification_event_handler( void )
         certification_data_is_pending = true;
     }
 
-    if( certification_data_is_pending == false )
+    if( current_event.event_data.downdata.window == SMTC_MODEM_EVENT_DOWNDATA_WINDOW_RXBEACON )
+    {
+        if( lorawan_api_certification_get_beacon_rx_status_ind_ctrl( ) == true )
+        {
+            user_payload_length = 0;
+            // Send data beacon to testing tool
+            lorawan_api_certification_build_beacon_rx_status_ind(
+                rx_payload, rx_payload_size, user_payload, &user_payload_length,
+                current_event.event_data.downdata.rssi - 64, current_event.event_data.downdata.snr >> 2,
+                current_event.event_data.downdata.datarate, current_event.event_data.downdata.frequency_hz );
+
+            SMTC_MODEM_HAL_TRACE_ARRAY( "BEACON to testing tool", user_payload, user_payload_length );
+            user_port     = 224;
+            is_request_tx = true;
+        }
+    }
+    else if( certification_data_is_pending == false )
     {
         user_port           = 2;
         user_payload_length = 1;  // lorawan_api_next_max_payload_length_get( );
@@ -1328,5 +1555,33 @@ static void certification_event_handler( void )
         certification_data_is_pending = false;
         smtc_modem_request_uplink( stack_id, user_port, lorawan_api_certification_get_frame_type( ), user_payload,
                                    user_payload_length );
+    }
+}
+static void send_task_update( uint8_t event_type )
+{
+    if( send_task_update_needed == true )
+    {
+        if( lorawan_api_rx_ack_bit_get( ) == 1 )
+        {
+            increment_asynchronous_msgnumber( event_type, MODEM_TX_SUCCESS_WITH_ACK );
+        }
+        else
+        {
+            increment_asynchronous_msgnumber( event_type, MODEM_TX_SUCCESS );
+        }
+    }
+    else
+    {
+        increment_asynchronous_msgnumber( event_type, MODEM_TX_FAILED );
+    }
+
+    // Re-enable the duty cycle in case of Emergency Tx was sent and dutycycle not disabled by host
+    if( modem_get_duty_cycle_disabled_by_host( ) == true )
+    {
+        lorawan_api_duty_cycle_enable_set( SMTC_DTC_FULL_DISABLED );
+    }
+    else
+    {
+        lorawan_api_duty_cycle_enable_set( SMTC_DTC_ENABLED );
     }
 }

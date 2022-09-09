@@ -190,14 +190,12 @@ void hal_gpio_toggle( const hal_gpio_pin_names_t pin );
  */
 uint32_t hal_gpio_get_value( const hal_gpio_pin_names_t pin );
 
-/*
- * Indicates if there is a pending irq on a pin
+/*!
+ * @brief Clears a pending irq on a pin
  *
- * \param [in] pin   pin to be checked
- * \retval pendig [true: IRQ pending
- *                 false: No IRQ pending]
+ * @param [in] pin   pin for which pending state is to be cleared
  */
-bool hal_gpio_is_pending_irq( const hal_gpio_pin_names_t pin );
+void hal_gpio_clear_pending_irq( const hal_gpio_pin_names_t pin );
 
 /*!
  * @brief EXTI IRQ Handler.

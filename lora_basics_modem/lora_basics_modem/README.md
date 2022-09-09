@@ -10,16 +10,29 @@ The LoRaWAN version that is currently implemented in LoRa Basics Modem is v1.0.4
 
 LoRa Basics Modem supports the following LoRaWAN regions:
 
-* EU868
-* US915
-* CN470_RP_1_0
+* AS_923 (AS923-1, AS923-2, AS923-3)
+* AU_915
+* CN_470
+* CN_470_RP_1_0
+* EU_868
+* IN_865
+* KR_920
+* RU_864
+* US_915
+
+LoRa Basics Modem supports an emulation of LoRaWAN protocol for the 2.4GHz global ISM band (WW2G4)
+
+### LoRaWAN regional parameters
+
+Default regional parameters version supported by LoRa Basics Modem is rp2-1.0.1. It is possible to switch to rp2-1.0.3 at compile time.
 
 ### LoRaWAN class
 
 LoRa Basics Modem supports the following LoRaWAN classes:
 
 * Class A
-* Class C
+* Class B (with up to 4 multicast sessions)
+* Class C (with up to 4 multicast sessions)
 
 ## LoRa Basics Modem services
 
@@ -49,12 +62,23 @@ The Hardware Abstraction Layer of LoRa Basics Modem is defined in the `smtc_mode
 LoRa Basics Modem supports the following transceivers:
 
 * LR1110 with firmware 0x0307.
+* LR1120 with firmware 0x0101
+* SX1261
+* SX1262
+* SX1280
+* SX1281
+
+## Known Limitations
+
+* [LFU] In case LoRa Basics Modem is acting in US915 region with datarate DR0, files smaller than 13 bytes are not properly sent and cannot be reconstructed on LoRa Cloud side
+* [charge] Values returned by `smtc_modem_get_charge()` for regions CN470 and CN470_RP1 are not accurate
+* [charge] Values returned by `smtc_modem_get_charge()` for the LR-FHSS based datarate are not accurate
 
 ## Disclaimer
 
-This software has been extensively tested when targeting LR1110 for the EU868, US915, and CN470_RP_1_0 LoRaWAN regions. For all other combinations of features this software shall be considered an Engineering Sample.
+This software has been extensively tested when targeting LR1110 / LR1120 / SX1261 / SX1262 / SX1280 / SX1281 for LoRaWAN regions mentioned in [this paragraph](#lorawan-region). For all other combinations of features this software shall be considered an Engineering Sample.
 
-All customers wanting to leverage LoRa Basics Modem for 2.4GHz running with SX1280 transceiver must still refer to the [release v1.0.1](https://github.com/lorabasics/lorabasicsmodem/releases/tag/v1.0.1) for which Semtech provides technical customer support.
+Modem trace prints can only be used for debug purpose and shall be deactivated for production release.
 
 ### Disclaimer for Engineering Samples
 

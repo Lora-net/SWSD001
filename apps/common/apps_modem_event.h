@@ -3,6 +3,7 @@
  *
  * @brief     LoRa Basics Modem event manager definition
  *
+ * @copyright
  * The Clear BSD License
  * Copyright Semtech Corporation 2021. All rights reserved.
  *
@@ -46,6 +47,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "smtc_modem_api.h"
+#include "smtc_modem_middleware_advanced_api.h"
 
 /*
  * -----------------------------------------------------------------------------
@@ -155,12 +157,42 @@ typedef struct
      */
     void ( *almanac_update )( smtc_modem_event_almanac_update_status_t status );
     /*!
-     * @brief  Almanac update callback prototype.
+     * @brief  User radio access callback prototype.
      *
      * @param [in] timestamp_ms timestamp in ms of the radio irq
      * @param [in] status Interrupt status
      */
     void ( *user_radio_access )( uint32_t timestamp_ms, smtc_modem_event_user_radio_access_status_t status );
+    /*!
+     * @brief  Class B ping slot status callback prototype
+     *
+     * @param [in] status Class B ping slot status
+     */
+    void ( *class_b_ping_slot_info )( smtc_modem_event_class_b_ping_slot_status_t status );
+    /*!
+     * @brief  Class B status callback prototype
+     *
+     * @param [in] status Class B status
+     */
+    void ( *class_b_status )( smtc_modem_event_class_b_status_t status );
+    /*!
+     * @brief  Middleware 1 callback prototype.
+     *
+     * @param [in] status Interrupt status
+     */
+    void ( *middleware_1 )( uint8_t status );
+    /*!
+     * @brief  Middleware 2 callback prototype.
+     *
+     * @param [in] status Interrupt status
+     */
+    void ( *middleware_2 )( uint8_t status );
+    /*!
+     * @brief  Middleware 3 callback prototype.
+     *
+     * @param [in] status Interrupt status
+     */
+    void ( *middleware_3 )( uint8_t status );
 } apps_modem_event_callback_t;
 
 /*

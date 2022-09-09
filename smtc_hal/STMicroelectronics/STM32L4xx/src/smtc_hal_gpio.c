@@ -199,40 +199,37 @@ uint32_t hal_gpio_get_value( const hal_gpio_pin_names_t pin )
     return ( HAL_GPIO_ReadPin( gpio_port, ( ( 1 << ( pin & 0x0F ) ) ) ) != GPIO_PIN_RESET ) ? 1 : 0;
 }
 
-bool hal_gpio_is_pending_irq( const hal_gpio_pin_names_t pin )
+void hal_gpio_clear_pending_irq( const hal_gpio_pin_names_t pin )
 {
-    bool pending = false;
-
     switch( pin & 0x0F )
     {
     case 0:
-        pending = ( NVIC_GetPendingIRQ( EXTI0_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI0_IRQn );
         break;
     case 1:
-        pending = ( NVIC_GetPendingIRQ( EXTI1_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI1_IRQn );
 
         break;
     case 2:
-        pending = ( NVIC_GetPendingIRQ( EXTI2_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI2_IRQn );
         break;
     case 3:
-        pending = ( NVIC_GetPendingIRQ( EXTI3_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI3_IRQn );
         break;
     case 4:
-        pending = ( NVIC_GetPendingIRQ( EXTI4_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI4_IRQn );
         break;
     case 5:
     case 6:
     case 7:
     case 8:
     case 9:
-        pending = ( NVIC_GetPendingIRQ( EXTI9_5_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI9_5_IRQn );
         break;
     default:
-        pending = ( NVIC_GetPendingIRQ( EXTI15_10_IRQn ) == 1 );
+        NVIC_ClearPendingIRQ( EXTI15_10_IRQn );
         break;
     }
-    return ( bool ) pending;
 }
 
 /*

@@ -2,21 +2,34 @@
 
 The LoRa Basics modem SDK contains several simple examples highlighting LoRa Basic Modem features.
 
-There are also two demonstrations explaining how direct access to the transceiver can be interleaved while LoRa Basics modem is running. The two demonstrations are based on the geolocation features offered by the LR1110 transceiver: Wi-Fi and GNSS scanning.
+## Examples and demonstrations
 
-## Examples
+The SDK is made of two different kind of projects:
 
-| Name                 | Description                                                           | Documentation                                 |
-| -------------------- | --------------------------------------------------------------------- | --------------------------------------------- |
-| Almanac update       | Perform a partial almanac update                                      | [README](apps/almanac_update/README.md)       |
-| DM information       | Configure periodic DM message reports and trigger asynchronous report | [README](apps/dm_info/README.md)              |
-| Geolocation - GNSS   | Perform GNSS scans interleaved with LoRaWAN operations                | [README](apps/geolocation_gnss/README.md)     |
-| Geolocation - Wi-Fi  | Perform Wi-Fi scans interleaved with LoRaWAN operations               | [README](apps/geolocation_wifi/README.md)     |
-| Large file upload    | Transfer a file (up to 2048 byte long) to LoRa Cloud                  | [README](apps/large_file_upload/README.md)    |
-| LoRaWAN              | Send data on a periodic basis                                         | [README](apps/lorawan/README.md)              |
-| LoRaWAN asynchronous | React on an asynchronous event - a putton press here - and send data  | [README](apps/lorawan_asynchronous/README.md) |
-| Stream               | Send data as a stream to LoRa Cloud                                   | [README](apps/stream/README.md)               |
-| Time synchronization | Get time from the network server or from LoRa Cloud                   | [README](apps/time_sync/README.md)            |
+* Examples, each demonstrating a specific feature of LoRa Basics Modem
+* Demonstrations, more elaborated than the examples
+
+Here is the list of the different examples available in the SDK:
+
+| Name                        | Description                                                             | Documentation                                               |
+| --------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Almanac update              | Perform a partial almanac update                                        | [README](apps/examples/almanac_update/README.md)            |
+| DM information              | Configure periodic DM message reports and trigger asynchronous report   | [README](apps/examples/dm_info/README.md)                   |
+| Large file upload           | Transfer a file (up to 2048 byte long) to LoRa Cloud                    | [README](apps/examples/large_file_upload/README.md)         |
+| LoRaWAN                     | Send data on a periodic basis                                           | [README](apps/examples/lorawan/README.md)                   |
+| LoRaWAN asynchronous        | React on an asynchronous event - a button press here - and send data    | [README](apps/examples/lorawan_asynchronous/README.md)      |
+| LoRaWAN Class B             | Enable Class B after joining a network                                  | [README](apps/examples/lorawan_class_b/README.md)           |
+| LoRaWAN Multicast - Class B | Enable Class B after joining a network and configure multicast sessions | [README](apps/examples/lorawan_multicast_class_b/README.md) |
+| LoRaWAN Multicast - Class C | Enable Class C after joining a network and configure multicast sessions | [README](apps/examples/lorawan_multicast_class_c/README.md) |
+| Stream                      | Send data as a stream to LoRa Cloud                                     | [README](apps/examples/stream/README.md)                    |
+| Time synchronization        | Get time from the network server or from LoRa Cloud                     | [README](apps/examples/time_sync/README.md)                 |
+| TX/RX continuous            | Generate a TX/RX continuous thanks to the test mode                     | [README](apps/examples/tx_rx_continuous/README.md)          |
+
+Here is the list of the different demonstrations available in the SDK:
+
+| Name             | Description                                                               | Documentation                                            |
+| ---------------- | ------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Region switching | Switch between two different networks with different switching mechanisms | [README](apps/demonstrations/region_switching/README.md) |
 
 ## Configuration
 
@@ -30,26 +43,40 @@ There is also [a common configuration file](apps/common/lorawan_key_config.h) wh
 * Class
 * Region
 
+## Convert LoRa Basics Modem Edge application code in LoRa Basics Modem application code
+
+In order to help a LoRa Basics Modem Edge application code conversion to a LoRa Basics Modem application code please refer to [ModemE_to_LBM](doc/ModemE_to_LBM.md).
+
 ## Requirements
 
 ### Supported platforms
 
-LoRa Basics Modem is platform independant and can be used with any MCU that fulfills the requirements.
+LoRa Basics Modem is platform independent and can be used with any MCU that fulfills the requirements.
 
-This SDK is developed on the following hardware:
+This SDK is developed on the STMicroeletronics [NUCLEO-L476RG development board](https://www.st.com/en/evaluation-tools/nucleo-l476rg.html).
 
-* ST Microeletronic [NUCLEO-L476RG development board](https://www.st.com/en/evaluation-tools/nucleo-l476rg.html)
-* Semtech [LR1110MB1LBKS](https://fr.semtech.com/products/wireless-rf/lora-edge/lr1110mb1lbks) shield and [LR1110MB1LCKS](https://fr.semtech.com/products/wireless-rf/lora-edge/lr1110mb1lcks) shield
+Different Semtech shields can configured at compile time:
+
+* LR1110 / LR1120 see [README](shields/LR11XX/smtc_shield_lr11xx/README.md)
+* SX1261 / SX1262 / SX1268 [README](shields/SX126X/smtc_shield_sx126x/README.md)
 
 ### Toolchain
 
-Examples can be compiled with either [Keil MDK ARM](https://www2.keil.com/mdk5) or [GNU Arm Embedded toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm).
+Examples can be compiled with either:
 
-### Firmware
+* [Keil MDK ARM](https://www2.keil.com/mdk5)
+* [GNU Arm Embedded toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm)
 
-The LoRa Basics Modem library requires the LR1110 runs the transceiver firmware version 0x0307 ([available here](https://github.com/Lora-net/radio_firmware_images/tree/master/lr1110/transceiver)).
+The projects are known to compile with GCC arm-none-eabi toolchain v10.3.1.
 
-To update the transceiver with the desired firmware version, please use [the updater tool application](https://github.com/Lora-net/lr1110_updater_tool/).
+### LR1110 / LR1120 firmware
+
+The LoRa Basics Modem library requires the following firmware:
+
+* LR1110 firmware version 0x0307 ([available here](https://github.com/Lora-net/radio_firmware_images/tree/master/lr1110/transceiver))
+* LR1120 firmware version 0x0101 ([available here](https://github.com/Lora-net/radio_firmware_images/tree/master/lr1120/transceiver))
+
+To update the transceiver with the desired firmware version, please use [the updater tool application](https://github.com/Lora-net/SWTL001).
 
 ## Getting started
 
@@ -63,51 +90,75 @@ Parameters can be seen in the [debug output](#view-debug-output).
 
 #### Keil MDK ARM
 
-Each example is delivered with a Keil project file - see `apps/MDK-ARM/lbm_example_<example>.uvprojx`. For instance, the Keil poject file for the LoRaWAN example is available in `$SDK_FOLDER/apps/lorawan/MDK-ARM/lbm_example_lorawan.uvprojx`.
+Each example is delivered with a several Keil project files, available under `MDK-ARM` folder for each project:
 
-Launch Keil IDE, open the project file and compile it.
+| Target name                                         | Transceivers             | LoRaWAN parameters | Cryptographic operations    | Notes                              |
+| --------------------------------------------------- | ------------------------ | ------------------ | --------------------------- | ---------------------------------- |
+| lbm_example_<example>_LR11xx_LR_cred_crypto.uvprojx | LR1110 / LR1120          | LR11XX-based       | LR11xx cryptographic engine |                                    |
+| lbm_example_<example>_LR11xx_LR_crypto.uvprojx      | LR1110 / LR1120          | User-defined       | LR11xx cryptographic engine |                                    |
+| lbm_example_<example>_LR11xx_soft_crypto.uvprojx    | LR1110 / LR1120          | User-defined       | Software                    |                                    |
+| lbm_example_<example>_SX126x_soft_crypto.uvprojx    | SX1261 / SX1262 / SX1268 | User-defined       | Software                    | Not available for `Almanac update` |
 
-Each project has 3 targets ([Keil manual](https://www.keil.com/support/man/docs/uv4/uv4_ca_projtargfilegr.htm)), each one allowing to chose how cryptographic operations are performed and where the LoRaWAN parameters are:
+Each project has different targets ([Keil manual](https://www.keil.com/support/man/docs/uv4/uv4_ca_projtargfilegr.htm)), each one selecting a specific shield.
 
-| Target name                                | Cryptographic operations    | LoRaWAN parameters |
-| ------------------------------------------ | --------------------------- | ------------------ |
-| `<example>_crypto_sw`                      | Software                    | User-defined       |
-| `<example>_crypto_lr1110`                  | LR1110 cryptographic engine | User-defined       |
-| `<example>_crypto_lr1110_with_credentials` | LR1110 cryptographic engine | LR1110-based       |
+The procedure to compile a project is then the following:
+
+1. Open Keil with the project file corresponding to the the project to use, the transceiver available on the shield and the cryptographic mode to use
+2. Select the target corresponding to the shield
+3. Click on compile button
 
 #### GNU Arm embedded toolchain
 
-Examples are built from their respective subfolder in the `apps` directory. For instance, the makefile for the LoRaWAN example is available in `$SDK_FOLDER/apps/lorawan/makefile/Makefile`.
+Each example is delivered with a makfile, available under `makefile` folder. The output files of the build process are stored in the `build` folder with firmware binary file having the same name as the project with a .bin extension.
 
-Build settings, compile time and configuration options are specified in the project's Makefile.
+It is possible to choose the cryptographic mode with the `CRYPTO` variable:
 
-To build a project, simply run make
+| CRYPTO value            | Cryptographic operations    | LoRaWAN parameters | Comments                                          |
+| ----------------------- | --------------------------- | ------------------ | ------------------------------------------------- |
+| SOFT                    | Software                    | User-defined       | Compatible with all transceivers                  |
+| LR11XX                  | LR11XX cryptographic engine | User-defined       | Compatible with LR1110 / LR1120 transceivers only |
+| LR11XX_WITH_CREDENTIALS | LR11XX cryptographic engine | LR11XX-based       | Compatible with LR1110 / LR1120 transceivers only |
 
-```shell
-$ cd $SDK_FOLDER/apps/lorawan/makefile
-$ make
-```
+The default value is `LR11XX`.
 
-The output files of the build process are stored in the `build` folder with firmware binary file having the same name as the project with a .bin extension.
+It is possible to choose the shield with the `RADIO_BOARD` variable. The possible values are listed in the correspondind `README` file:
 
-It is possible to choose the cryptographic mode with the CRYPTO variable:
+* [LR11xx shields](shields/LR11XX/smtc_shield_lr11xx/README.md)
+* [SX126x shields](shields/SX126X/smtc_shield_sx126x/README.md)
 
-| CRYPTO value            | Cryptographic operations    | LoRaWAN parameters |
-| ----------------------- | --------------------------- | ------------------ |
-| SOFT                    | Software                    | User-defined       |
-| LR1110                  | LR1110 cryptographic engine | User-defined       |
-| LR1110_WITH_CREDENTIALS | LR1110 cryptographic engine | LR1110-based       |
+The default value is `LR1110MB1DIS`.
 
-For instance, to build the project `lorawan` with software-based cryptographic operations and user-defined LoRaWAN parameters:
-
-To build a project, simply run make
+For instance, to build the project `lorawan` on the LR1120MB1DJS platform board with the software cryptographic mode, call the following commands:
 
 ```shell
-$ cd $SDK_FOLDER/apps/lorawan/makefile
-$ make CRYPTO=SOFT
+$ cd $SDK_FOLDER/apps/examples/lorawan/makefile
+$ make RADIO_BOARD=LR1120MB1DJS CRYPTO=SOFT
 ```
 
-The default value for all examples is set to `LR1110`, except for geolocation examples (`geolocation_gnss` and `geolocation_wifi`) where the CRYPTO value is set to `SOFT`.
+##### Note on re-build
+
+When re-building an example after changing a compile-time parameter that affects LoRa Basics Modem library (like *CRYPTO*, *RADIO_BOARD* or *MIDDLEWARE*), it is important to force re-build of the LoRa Basics Modem library.
+
+This can be achieved by cleaning prior the re-build of the example with:
+
+```shell
+$ make clean_lbm
+```
+
+##### Command line configuration
+
+Additionnal configuration flags can be passed from command line to compiler with `EXTRAFLAGS` argument.
+This is dedicated to define macros that can be defined like the following:
+
+```bash
+$ make EXTRAFLAGS='-D<MACRO>=<VALUE>'
+```
+
+Where `<MACRO>` is the macro name to set and `<VALUE>` is the value to set for this macro.
+Not all macro can be redefined through this way. Refer to the readme of examples for the list of macro that can be defined.
+
+Note that when using the configuration on command line, `make` cannot detect a change in configuration on next build.
+Therefore `make clean` must be invoked when building after a build where configuration was provided on command line.
 
 ### Load
 
@@ -115,7 +166,7 @@ After a project is built, it can be loaded onto a device.
 
 There are multiple ways to do it:
 
-* Drag and drop the binary file to the USB drive liste by our OS - usually shows up as `NODE_L476RG`.
+* Drag and drop the binary file to the USB drive listed by our OS - usually shows up as `NODE_L476RG`.
 * Load it through the Keil IDE
 
 ### View debug output
@@ -135,7 +186,7 @@ INFO: ###### ===== LoRa Basics Modem LoRaWAN Class A/C demo application ==== ###
 INFO: LoRaWAN version: 01.00.04.01
 INFO: LoRa Basics Modem version: 02.01.00
 INFO: ###### ===== BASICS MODEM RESET EVENT ==== ######
-Reset count : 95 
+Reset count : 95
 INFO: Application parameters:
 INFO:   - LoRaWAN uplink Fport = 2
 INFO:   - DM report interval   = 60

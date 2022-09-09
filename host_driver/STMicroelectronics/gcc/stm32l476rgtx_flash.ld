@@ -225,12 +225,12 @@ SECTIONS
   .stack :
   {
       . = ALIGN(8);
-      _estack = . ;
-      __stack_end__ = _estack;
-      . = . + _Min_Stack_Size;
-      . = ALIGN(8);
-      _sstack = . ;
+      _sstack = .;
       __stack_start__ = _sstack;
+      stack_size = _estack - ABSOLUTE(_sstack);
+      . = . + MAX(_Min_Stack_Size, stack_size);
+      . = ALIGN(8);
+      __stack_end__ = .;
   } >RAM2
 
   /* User_heap_stack section, used to check that there is enough RAM left */

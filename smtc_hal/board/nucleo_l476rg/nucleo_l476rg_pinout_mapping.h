@@ -75,6 +75,10 @@ extern "C" {
 #define ARDUINO_CONNECTOR_A4 PC_1
 #define ARDUINO_CONNECTOR_A5 PC_0
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif  // NUCLEO_L476RG_PINOUT_MAPPING_H
 
 /* --- EOF ------------------------------------------------------------------ */

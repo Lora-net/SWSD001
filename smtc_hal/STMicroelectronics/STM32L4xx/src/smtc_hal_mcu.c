@@ -253,13 +253,14 @@ void hal_mcu_set_sleep_for_ms( const int32_t milliseconds )
         if( ( time_counter > ( WATCHDOG_RELOAD_PERIOD_SECONDS * 1000 ) ) )
         {
             time_counter -= WATCHDOG_RELOAD_PERIOD_SECONDS * 1000;
+            hal_rtc_wakeup_timer_set_ms( WATCHDOG_RELOAD_PERIOD_SECONDS * 1000 );
         }
         else
         {
+             hal_rtc_wakeup_timer_set_ms( time_counter );
             // if the sleep time is less than the wdog reload period, this is the last sleep loop
             last_sleep_loop = true;
         }
-        hal_rtc_wakeup_timer_set_ms( time_counter );
         hal_mcu_sleep_handler( );
 
 #if( HAL_USE_WATCHDOG == HAL_FEATURE_ON )

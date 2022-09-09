@@ -43,7 +43,7 @@ extern "C" {
  * --- DEPENDENCIES ------------------------------------------------------------
  */
 #include <stddef.h>
-#include <stdint.h>   
+#include <stdint.h>
 #include <stdbool.h>
 
 /*

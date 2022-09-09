@@ -46,9 +46,11 @@
 #include "apps_utilities.h"
 #include "lorawan_key_config.h"
 #include "smtc_modem_api.h"
-#include "smtc_basic_modem_lr1110_api_extension.h"
+#include "smtc_basic_modem_lr11xx_api_extension.h"
 #include "smtc_board.h"
 #include "smtc_hal.h"
+#include "smtc_modem_api_str.h"
+#include "apps_modem_common_version.h"
 
 /*
  * -----------------------------------------------------------------------------
@@ -85,6 +87,8 @@
  * --- PRIVATE VARIABLES -------------------------------------------------------
  */
 
+static const char* apps_modem_common_sdk_version = APPS_MODEM_COMMON_SDK_VERSION;
+
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE FUNCTIONS DECLARATION -------------------------------------------
@@ -100,7 +104,7 @@
  * --- PUBLIC FUNCTIONS DEFINITION ---------------------------------------------
  */
 
-uint32_t apps_modem_common_get_time( void )
+uint32_t apps_modem_common_get_gps_time( void )
 {
     uint32_t gps_time_s       = 0;
     uint32_t gps_fractional_s = 0;
@@ -111,14 +115,7 @@ uint32_t apps_modem_common_get_time( void )
     {
     case SMTC_MODEM_RC_OK:
     {
-        char         buf[TIME_BUFFER_SIZE];
-        const time_t time_utc =
-            ( time_t )( gps_time_s + OFFSET_BETWEEN_GPS_EPOCH_AND_UNIX_EPOCH - OFFSET_LEAP_SECONDS );
-        const struct tm* time = localtime( &time_utc );  // localtime() is used here instead of gmtime() because the
-                                                         // latter is not implemented in the libraries used by Keil
-
-        strftime( buf, TIME_BUFFER_SIZE, "%a %Y-%m-%d %H:%M:%S %Z", time );
-        HAL_DBG_TRACE_INFO( "Current time: %s\n", buf );
+        HAL_DBG_TRACE_INFO( "Current UTC time: %d s\n", gps_time_s );
 
         break;
     }
@@ -137,30 +134,75 @@ uint32_t apps_modem_common_get_time( void )
     return gps_time_s;
 }
 
+uint32_t apps_modem_common_get_utc_time( void )
+{
+    uint32_t gps_time_s       = 0;
+    uint32_t gps_fractional_s = 0;
+    time_t   time_utc         = 0;
+
+    const smtc_modem_return_code_t status = smtc_modem_get_time( &gps_time_s, &gps_fractional_s );
+
+    switch( status )
+    {
+    case SMTC_MODEM_RC_OK:
+    {
+        time_utc = ( time_t ) ( gps_time_s + OFFSET_BETWEEN_GPS_EPOCH_AND_UNIX_EPOCH - OFFSET_LEAP_SECONDS );
+
+        char             buf[TIME_BUFFER_SIZE];
+        const struct tm* time = localtime( &time_utc );  // localtime() is used here instead of gmtime() because the
+                                                         // latter is not implemented in the libraries used by Keil
+
+        strftime( buf, TIME_BUFFER_SIZE, "%a %Y-%m-%d %H:%M:%S %Z", time );
+        HAL_DBG_TRACE_INFO( "Current UTC time: %s\n", buf );
+
+        break;
+    }
+    case SMTC_MODEM_RC_NO_TIME:
+    {
+        HAL_DBG_TRACE_WARNING( "No time available.\n" );
+        break;
+    }
+    default:
+    {
+        HAL_DBG_TRACE_ERROR( "Cannot get time from modem\n" );
+        break;
+    }
+    }
+
+    return time_utc;
+}
+
+uint32_t apps_modem_common_convert_gps_to_utc_time( uint32_t gps_time_s )
+{
+    return gps_time_s + OFFSET_BETWEEN_GPS_EPOCH_AND_UNIX_EPOCH - OFFSET_LEAP_SECONDS;
+}
+
 void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
 {
     smtc_modem_return_code_t rc                              = SMTC_MODEM_RC_OK;
     uint8_t                  dev_eui[LORAWAN_DEVICE_EUI_LEN] = LORAWAN_DEVICE_EUI;
     uint8_t                  join_eui[LORAWAN_JOIN_EUI_LEN]  = LORAWAN_JOIN_EUI;
-    uint8_t                  app_key[LORAWAN_APP_KEY_LEN]    = LORAWAN_APP_KEY;
 
 #ifdef USER_DEFINED_JOIN_PARAMETERS
+
+    uint8_t app_key[LORAWAN_APP_KEY_LEN] = LORAWAN_APP_KEY;
+
     rc = smtc_modem_set_deveui( stack_id, dev_eui );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_deveui failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_set_deveui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     rc = smtc_modem_set_joineui( stack_id, join_eui );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_joineui failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_set_joineui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     rc = smtc_modem_set_nwkkey( stack_id, app_key );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_nwkkey failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_set_nwkkey failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 #endif
 
@@ -173,7 +215,7 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_deveui failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_get_deveui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     rc = smtc_modem_get_joineui( stack_id, join_eui );
@@ -183,11 +225,24 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_joineui failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_get_joineui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
-#ifdef LR1110_DEFINED_JOIN_PARAMETERS
+#ifdef LR11XX_DEFINED_JOIN_PARAMETERS
+
+    uint8_t chip_eui[LORAWAN_DEVICE_EUI_LEN];
     uint8_t pin[4];
+
+    rc = smtc_modem_get_chip_eui( stack_id, chip_eui );
+    if( rc == SMTC_MODEM_RC_OK )
+    {
+        HAL_DBG_TRACE_ARRAY( "ChipEUI", chip_eui, LORAWAN_DEVICE_EUI_LEN );
+    }
+    else
+    {
+        HAL_DBG_TRACE_ERROR( "smtc_modem_get_chip_eui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+    }
+
     rc = smtc_modem_get_pin( stack_id, pin );
     if( rc == SMTC_MODEM_RC_OK )
     {
@@ -195,14 +250,14 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_pin failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_get_pin failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 #endif
 
     rc = smtc_modem_set_class( stack_id, LORAWAN_CLASS );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_class failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_set_class failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     modem_class_to_string( LORAWAN_CLASS );
@@ -210,13 +265,19 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     rc = smtc_modem_set_region( stack_id, LORAWAN_REGION );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_region failed (%d)\n", rc );
+        HAL_DBG_TRACE_ERROR( "smtc_modem_set_region failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     modem_region_to_string( LORAWAN_REGION );
 
     /* adapt the tx power offet depending on the board */
     rc |= smtc_modem_set_tx_power_offset_db( stack_id, smtc_board_get_tx_power_offset( ) );
+}
+
+void apps_modem_common_display_version_information( void )
+{
+    apps_modem_commom_display_sdk_version( );
+    apps_modem_common_display_lbm_version( );
 }
 
 void apps_modem_common_display_lbm_version( void )
@@ -238,6 +299,11 @@ void apps_modem_common_display_lbm_version( void )
         HAL_DBG_TRACE_INFO( "LoRa Basics Modem version: %.2x.%.2x.%.2x\n", firmware_version.major,
                             firmware_version.minor, firmware_version.patch );
     }
+}
+
+void apps_modem_commom_display_sdk_version( void )
+{
+    HAL_DBG_TRACE_INFO( "SDK version: %s\n", apps_modem_common_sdk_version );
 }
 
 /*

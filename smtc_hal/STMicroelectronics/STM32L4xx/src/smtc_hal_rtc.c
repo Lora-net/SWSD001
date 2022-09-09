@@ -1,7 +1,7 @@
 /*!
  * @file      smtc_hal_rtc.c
  *
- * \brief     RTC Hardware Abstraction Layer implementation
+ * @brief     RTC Hardware Abstraction Layer implementation
  *
  * The Clear BSD License
  * Copyright Semtech Corporation 2021. All rights reserved.
@@ -181,11 +181,11 @@ static uint32_t hal_rtc_s_2_wakeup_timer_tick( const uint32_t seconds );
 /*!
  * @brief Get the elapsed time in seconds and milliseconds since RTC initialization
  *
- * @param [out] milliseconds Number of milliseconds elapsed since RTC
- *                           initialization
- * @returns seconds           Number of seconds elapsed since RTC initialization
+ * @param [out] milliseconds_div_10 Number of 0.1 milliseconds elapsed since RTC
+ *                                  initialization
+ * @returns seconds Number of seconds elapsed since RTC initialization
  */
-static uint32_t hal_rtc_get_calendar_time( uint16_t* milliseconds );
+static uint32_t hal_rtc_get_calendar_time( uint16_t* milliseconds_div_10 );
 
 /*!
  * @brief Get current full resolution RTC timestamp in ticks
@@ -225,7 +225,7 @@ void hal_rtc_init( void )
     date.WeekDay = RTC_WEEKDAY_MONDAY;
     HAL_RTC_SetDate( &hal_rtc.handle, &date, RTC_FORMAT_BIN );
 
-    /*at 0:0:0*/
+    /* at 0:0:0 */
     time.Hours          = 0;
     time.Minutes        = 0;
     time.Seconds        = 0;
@@ -250,19 +250,29 @@ void hal_rtc_init( void )
 
 uint32_t hal_rtc_get_time_s( void )
 {
-    uint16_t milliseconds = 0;
-    return hal_rtc_get_calendar_time( &milliseconds );
+    uint16_t milliseconds_div_10 = 0;
+    return hal_rtc_get_calendar_time( &milliseconds_div_10 );
+}
+
+uint32_t hal_rtc_get_time_100us( void )
+{
+    uint32_t seconds             = 0;
+    uint16_t milliseconds_div_10 = 0;
+
+    seconds = hal_rtc_get_calendar_time( &milliseconds_div_10 );
+
+    return seconds * 10000 + milliseconds_div_10;
 }
 
 uint32_t hal_rtc_get_time_ms( void )
-{
-    uint32_t seconds      = 0;
-    uint16_t milliseconds = 0;
+{ 
+    uint32_t seconds             = 0;
+    uint16_t milliseconds_div_10 = 0;
 
-    seconds = hal_rtc_get_calendar_time( &milliseconds );
+    seconds = hal_rtc_get_calendar_time( &milliseconds_div_10 );
 
-    return seconds * 1000 + milliseconds;
-}
+    return seconds * 1000 + ( milliseconds_div_10 / 10 );
+ }
 
 void hal_rtc_stop_alarm( void )
 {
@@ -295,7 +305,7 @@ void hal_rtc_start_alarm( uint32_t timeout )
 
     hal_rtc_stop_alarm( );
 
-    /*reverse counter */
+    /* reverse counter */
     rtc_alarm_sub_seconds = PREDIV_S - time.SubSeconds;
     rtc_alarm_sub_seconds += ( timeout & PREDIV_S );
     /* convert timeout  to seconds */
@@ -328,7 +338,7 @@ void hal_rtc_start_alarm( uint32_t timeout )
     /* Calc seconds */
     rtc_alarm_seconds = time.Seconds + timeout;
 
-    /***** Correct for modulo*********/
+    /***** Correct for modulo *********/
     while( rtc_alarm_sub_seconds >= ( PREDIV_S + 1 ) )
     {
         rtc_alarm_sub_seconds -= ( PREDIV_S + 1 );
@@ -435,10 +445,11 @@ void hal_rtc_wakeup_timer_set_ms( const int32_t milliseconds )
     uint32_t delay_ms_2_tick = hal_rtc_ms_2_wakeup_timer_tick( milliseconds );
 
     HAL_RTCEx_DeactivateWakeUpTimer( &hal_rtc.handle );
-    // reset irq status
+    /* reset irq status */
     wut_timer_irq_happened = false;
     HAL_RTCEx_SetWakeUpTimer_IT( &hal_rtc.handle, delay_ms_2_tick, RTC_WAKEUPCLOCK_RTCCLK_DIV16 );
 }
+
 void hal_rtc_wakeup_timer_stop( void ) { HAL_RTCEx_DeactivateWakeUpTimer( &hal_rtc.handle ); }
 
 bool hal_rtc_has_wut_irq_happened( void ) { return wut_timer_irq_happened; }
@@ -460,6 +471,14 @@ uint32_t hal_rtc_get_time_ref_in_ticks( void ) { return hal_rtc.context.time_ref
 uint32_t hal_rtc_ms_2_tick( const uint32_t milliseconds )
 {
     return ( uint32_t )( ( ( ( uint64_t ) milliseconds ) * CONV_DENOM ) / CONV_NUMER );
+}
+
+uint32_t hal_rtc_tick_2_100_us( const uint32_t tick )
+{
+    uint32_t seconds    = tick >> N_PREDIV_S;
+    uint32_t local_tick = tick & PREDIV_S;
+
+    return ( uint32_t )( ( seconds * 10000 ) + ( ( local_tick * 10000 ) >> N_PREDIV_S ) );
 }
 
 uint32_t hal_rtc_tick_2_ms( const uint32_t tick )
@@ -488,7 +507,7 @@ static uint32_t hal_rtc_s_2_wakeup_timer_tick( const uint32_t seconds )
     return nb_tick;
 }
 
-static uint32_t hal_rtc_get_calendar_time( uint16_t* milliseconds )
+static uint32_t hal_rtc_get_calendar_time( uint16_t* milliseconds_div_10 )
 {
     RTC_TimeTypeDef time;
     RTC_DateTypeDef date;
@@ -500,7 +519,7 @@ static uint32_t hal_rtc_get_calendar_time( uint16_t* milliseconds )
 
     ticks = ( uint32_t ) timestamp_in_ticks & PREDIV_S;
 
-    *milliseconds = hal_rtc_tick_2_ms( ticks );
+    *milliseconds_div_10 = hal_rtc_tick_2_100_us( ticks );
 
     return seconds;
 }
@@ -530,7 +549,7 @@ void RTC_Alarm_IRQHandler( void )
 }
 
 /*!
- * @brief  Alarm A callback.
+ * @brief Alarm A callback.
  *
  * @param [in] hrtc RTC handle
  */
@@ -616,6 +635,7 @@ uint32_t hal_rtc_temp_compensation( uint32_t period, float temperature )
 
     /* Calculate the drift in time */
     interim = ( ( float ) period * ppm ) / ( ( float ) 1e6 );
+
     /* Calculate the resulting time period */
     interim += period;
     interim = floor( interim );

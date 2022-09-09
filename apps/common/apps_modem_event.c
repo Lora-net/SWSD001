@@ -3,6 +3,7 @@
  *
  * @brief     LoRa Basics Modem event manager implementation
  *
+ * @copyright
  * The Clear BSD License
  * Copyright Semtech Corporation 2021. All rights reserved.
  *
@@ -39,6 +40,7 @@
 
 #include "apps_modem_event.h"
 #include "smtc_hal_dbg_trace.h"
+#include "smtc_modem_api_str.h"
 
 /*
  * -----------------------------------------------------------------------------
@@ -120,7 +122,7 @@ void apps_modem_event_process( void )
                     }
                     break;
                 case SMTC_MODEM_EVENT_JOINFAIL:
-                    HAL_DBG_TRACE_INFO( "###### ===== JOINED FAIL EVENT ==== ######\n" )
+                    HAL_DBG_TRACE_INFO( "###### ===== JOINED FAIL EVENT ==== ######\n" );
                     if( apps_modem_event_callback->join_fail != NULL )
                     {
                         apps_modem_event_callback->join_fail( );
@@ -131,15 +133,14 @@ void apps_modem_event_process( void )
                     switch( current_event.event_data.txdone.status )
                     {
                     case SMTC_MODEM_EVENT_TXDONE_NOT_SENT:
-                        HAL_DBG_TRACE_ERROR( "TX Done status: not sent\n" );
+                        HAL_DBG_TRACE_ERROR( "TX Done status: %s\n", smtc_modem_event_txdone_status_to_str(
+                                                                         current_event.event_data.txdone.status ) );
                         break;
                     case SMTC_MODEM_EVENT_TXDONE_SENT:
-                        HAL_DBG_TRACE_MSG( "TX Done status: sent\n" );
-                        break;
                     case SMTC_MODEM_EVENT_TXDONE_CONFIRMED:
-                        HAL_DBG_TRACE_MSG( "TX Done status: sent and confirmed\n" );
-                        break;
                     default:
+                        HAL_DBG_TRACE_PRINTF( "TX Done status: %s\n", smtc_modem_event_txdone_status_to_str(
+                                                                          current_event.event_data.txdone.status ) );
                         break;
                     }
                     if( apps_modem_event_callback->tx_done != NULL )
@@ -149,7 +150,8 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_DOWNDATA:
                     HAL_DBG_TRACE_INFO( "###### ===== DOWNLINK EVENT ==== ######\n" );
-                    HAL_DBG_TRACE_PRINTF( "Rx window: %d\n", current_event.event_data.downdata.window );
+                    HAL_DBG_TRACE_PRINTF( "Rx window: %s\n", smtc_modem_event_downdata_window_to_str(
+                                                                 current_event.event_data.downdata.window ) );
                     HAL_DBG_TRACE_PRINTF( "Rx port: %d\n", current_event.event_data.downdata.fport );
                     HAL_DBG_TRACE_PRINTF( "Rx RSSI: %d\n", current_event.event_data.downdata.rssi - 64 );
                     HAL_DBG_TRACE_PRINTF( "Rx SNR: %d\n", current_event.event_data.downdata.snr / 4 );
@@ -164,10 +166,8 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_UPLOADDONE:
                     HAL_DBG_TRACE_INFO( "###### ===== UPLOAD DONE EVENT ==== ######\n" );
-                    HAL_DBG_TRACE_PRINTF( "Upload status: %s\n", ( current_event.event_data.uploaddone.status ==
-                                                                   SMTC_MODEM_EVENT_UPLOADDONE_SUCCESSFUL )
-                                                                     ? "SUCCESSFUL"
-                                                                     : "ABORTED" );
+                    HAL_DBG_TRACE_PRINTF( "Upload status: %s\n", smtc_modem_event_uploaddone_status_to_str(
+                                                                     current_event.event_data.uploaddone.status ) );
                     if( apps_modem_event_callback->upload_done != NULL )
                     {
                         apps_modem_event_callback->upload_done( current_event.event_data.uploaddone.status );
@@ -175,25 +175,8 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_SETCONF:
                     HAL_DBG_TRACE_INFO( "###### ===== SET CONF EVENT ==== ######\n" );
-                    HAL_DBG_TRACE_MSG( "Tag: " );
-                    switch( current_event.event_data.setconf.tag )
-                    {
-                    case SMTC_MODEM_EVENT_SETCONF_ADR_MODE_UPDATED:
-                    {
-                        HAL_DBG_TRACE_MSG( "ADR mode updated\n" );
-                        break;
-                    }
-                    case SMTC_MODEM_EVENT_SETCONF_JOIN_EUI_UPDATED:
-                    {
-                        HAL_DBG_TRACE_MSG( "Join EUI updated\n" );
-                        break;
-                    }
-                    case SMTC_MODEM_EVENT_SETCONF_DM_INTERVAL_UPDATED:
-                    {
-                        HAL_DBG_TRACE_MSG( "DM interval updated\n" );
-                        break;
-                    }
-                    }
+                    HAL_DBG_TRACE_PRINTF( "Tag: %s",
+                                          smtc_modem_event_setconf_tag_to_str( current_event.event_data.setconf.tag ) );
                     if( apps_modem_event_callback->set_conf != NULL )
                     {
                         apps_modem_event_callback->set_conf( current_event.event_data.setconf.tag );
@@ -201,9 +184,8 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_MUTE:
                     HAL_DBG_TRACE_INFO( "###### ===== MUTE EVENT ==== ######\n" );
-                    HAL_DBG_TRACE_PRINTF(
-                        "Mute: %s\n",
-                        ( current_event.event_data.mute.status == SMTC_MODEM_EVENT_MUTE_ON ) ? "ON" : "OFF" );
+                    HAL_DBG_TRACE_PRINTF( "Mute: %s\n",
+                                          smtc_modem_event_mute_status_to_str( current_event.event_data.mute.status ) );
                     if( apps_modem_event_callback->mute != NULL )
                     {
                         apps_modem_event_callback->mute( current_event.event_data.mute.status );
@@ -218,24 +200,8 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_TIME:
                     HAL_DBG_TRACE_INFO( "###### ===== TIME EVENT ==== ######\n" );
-                    switch( current_event.event_data.time.status )
-                    {
-                    case SMTC_MODEM_EVENT_TIME_NOT_VALID:
-                    {
-                        HAL_DBG_TRACE_MSG( "Time not valid\n" );
-                        break;
-                    }
-                    case SMTC_MODEM_EVENT_TIME_VALID:
-                    {
-                        HAL_DBG_TRACE_MSG( "Time valid\n" );
-                        break;
-                    }
-                    case SMTC_MODEM_EVENT_TIME_VALID_BUT_NOT_SYNC:
-                    {
-                        HAL_DBG_TRACE_MSG( "Time valid but not sync\n" );
-                        break;
-                    }
-                    }
+                    HAL_DBG_TRACE_PRINTF( "Time: %s\n",
+                                          smtc_modem_event_time_status_to_str( current_event.event_data.time.status ) );
                     if( apps_modem_event_callback->time_updated_alc_sync != NULL )
                     {
                         apps_modem_event_callback->time_updated_alc_sync( current_event.event_data.time.status );
@@ -257,7 +223,8 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_LINK_CHECK:
                     HAL_DBG_TRACE_INFO( "###### ===== LINK CHECK EVENT ==== ######\n" );
-                    HAL_DBG_TRACE_PRINTF( "Link status: %d\n", current_event.event_data.link_check.status );
+                    HAL_DBG_TRACE_PRINTF( "Link status: %s\n", smtc_modem_event_link_check_status_to_str(
+                                                                   current_event.event_data.link_check.status ) );
                     HAL_DBG_TRACE_PRINTF( "Margin: %d dB\n", current_event.event_data.link_check.margin );
                     HAL_DBG_TRACE_PRINTF( "Number of gateways: %d\n", current_event.event_data.link_check.gw_cnt );
                     if( apps_modem_event_callback->link_status != NULL )
@@ -269,11 +236,9 @@ void apps_modem_event_process( void )
                     break;
                 case SMTC_MODEM_EVENT_ALMANAC_UPDATE:
                     HAL_DBG_TRACE_INFO( "###### ===== ALMANAC UPDATE EVENT ==== ######\n" );
-                    HAL_DBG_TRACE_PRINTF(
-                        "Almanac update status: %s\n",
-                        ( current_event.event_data.almanac_update.status == SMTC_MODEM_EVENT_ALMANAC_UPDATE_COMPLETED )
-                            ? "COMPLETED"
-                            : "STATUS_REQUESTED" );
+                    HAL_DBG_TRACE_PRINTF( "Almanac update status: %s\n",
+                                          smtc_modem_event_almanac_update_status_to_str(
+                                              current_event.event_data.almanac_update.status ) );
                     if( apps_modem_event_callback->almanac_update != NULL )
                     {
                         apps_modem_event_callback->almanac_update( current_event.event_data.almanac_update.status );
@@ -286,6 +251,51 @@ void apps_modem_event_process( void )
                         apps_modem_event_callback->user_radio_access(
                             current_event.event_data.user_radio_access.timestamp_ms,
                             current_event.event_data.user_radio_access.status );
+                    }
+                    break;
+                case SMTC_MODEM_EVENT_CLASS_B_PING_SLOT_INFO:
+                    HAL_DBG_TRACE_INFO( "###### ===== CLASS B PING SLOT INFO EVENT ==== ######\n" );
+                    HAL_DBG_TRACE_PRINTF( "Class B ping slot status: %s\n",
+                                          smtc_modem_event_class_b_ping_slot_status_to_str(
+                                              current_event.event_data.class_b_ping_slot_info.status ) );
+                    if( apps_modem_event_callback->class_b_ping_slot_info != NULL )
+                    {
+                        apps_modem_event_callback->class_b_ping_slot_info(
+                            current_event.event_data.class_b_ping_slot_info.status );
+                    }
+                    break;
+                case SMTC_MODEM_EVENT_CLASS_B_STATUS:
+                    HAL_DBG_TRACE_INFO( "###### ===== CLASS B STATUS EVENT ==== ######\n" );
+                    HAL_DBG_TRACE_PRINTF(
+                        "Class B status: %s\n",
+                        smtc_modem_event_class_b_status_to_str( current_event.event_data.class_b_status.status ) );
+                    if( apps_modem_event_callback->class_b_status != NULL )
+                    {
+                        apps_modem_event_callback->class_b_status( current_event.event_data.class_b_status.status );
+                    }
+                    break;
+                case SMTC_MODEM_EVENT_MIDDLEWARE_1:
+                    HAL_DBG_TRACE_INFO( "###### ===== MIDDLEWARE_1 EVENT ==== ######\n" );
+                    if( apps_modem_event_callback->middleware_1 != NULL )
+                    {
+                        apps_modem_event_callback->middleware_1(
+                            current_event.event_data.middleware_event_status.status );
+                    }
+                    break;
+                case SMTC_MODEM_EVENT_MIDDLEWARE_2:
+                    HAL_DBG_TRACE_INFO( "###### ===== MIDDLEWARE_2 EVENT ==== ######\n" );
+                    if( apps_modem_event_callback->middleware_2 != NULL )
+                    {
+                        apps_modem_event_callback->middleware_2(
+                            current_event.event_data.middleware_event_status.status );
+                    }
+                    break;
+                case SMTC_MODEM_EVENT_MIDDLEWARE_3:
+                    HAL_DBG_TRACE_INFO( "###### ===== MIDDLEWARE_3 EVENT ==== ######\n" );
+                    if( apps_modem_event_callback->middleware_3 != NULL )
+                    {
+                        apps_modem_event_callback->middleware_3(
+                            current_event.event_data.middleware_event_status.status );
                     }
                     break;
                 case SMTC_MODEM_EVENT_NONE:
@@ -302,7 +312,7 @@ void apps_modem_event_process( void )
         }
         else
         {
-            HAL_DBG_TRACE_ERROR( "smtc_modem_get_event != SMTC_MODEM_RC_OK\n", current_event.event_type );
+            HAL_DBG_TRACE_ERROR( "smtc_modem_get_event != SMTC_MODEM_RC_OK\n" );
         }
     } while( ( return_code == SMTC_MODEM_RC_OK ) && ( current_event.event_type != SMTC_MODEM_EVENT_NONE ) );
 }

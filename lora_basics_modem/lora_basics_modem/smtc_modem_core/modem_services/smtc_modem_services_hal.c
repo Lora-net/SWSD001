@@ -46,9 +46,9 @@
 #include "smtc_modem_hal.h"
 #include "modem_context.h"
 
-#if defined( LR1110_TRANSCEIVER ) && defined( ENABLE_MODEM_GNSS_FEATURE )
-#include "lr1110_gnss.h"
-#endif  // LR1110_TRANSCEIVER && ENABLE_MODEM_GNSS_FEATURE
+#if defined( LR11XX_TRANSCEIVER ) && defined( ENABLE_MODEM_GNSS_FEATURE )
+#include "lr11xx_gnss.h"
+#endif  // LR11XX_TRANSCEIVER && ENABLE_MODEM_GNSS_FEATURE
 
 /*
  * -----------------------------------------------------------------------------
@@ -83,16 +83,12 @@
 void smtc_modem_services_aes_encrypt( const uint8_t* raw_buffer, uint16_t size, uint8_t aes_ctr_nonce[14],
                                       uint8_t* enc_buffer )
 {
-    uint32_t address = ( uint32_t )( aes_ctr_nonce[6] ) | ( uint32_t )( aes_ctr_nonce[7] << 8 ) |
-                       ( uint32_t )( aes_ctr_nonce[8] << 16 ) | ( uint32_t )( aes_ctr_nonce[9] << 24 );
-    uint8_t  dir              = aes_ctr_nonce[5];
-    uint32_t sequence_counter = ( uint32_t )( aes_ctr_nonce[10] ) | ( uint32_t )( aes_ctr_nonce[11] << 8 ) |
-                                ( uint32_t )( aes_ctr_nonce[12] << 16 ) | ( uint32_t )( aes_ctr_nonce[13] << 24 );
-    // lora_crypto_payload_encrypt( raw_buffer, size, key, address, dir, sequence_counter, enc_buffer );
-
     // Modem crypto lib can be used here
-    smtc_modem_crypto_payload_encrypt( raw_buffer, size, SMTC_SE_APP_S_KEY, address, dir, sequence_counter,
-                                       enc_buffer );
+    if( smtc_modem_crypto_service_encrypt( raw_buffer, size, aes_ctr_nonce, enc_buffer ) !=
+        SMTC_MODEM_CRYPTO_RC_SUCCESS )
+    {
+        smtc_modem_hal_mcu_panic( "Encryption of lfu failed\n" );
+    }
 }
 
 uint32_t smtc_modem_services_get_time_s( void )
@@ -100,39 +96,39 @@ uint32_t smtc_modem_services_get_time_s( void )
     return smtc_modem_hal_get_compensated_time_in_s( );
 }
 
-#if defined( LR1110_TRANSCEIVER ) && defined( ENABLE_MODEM_GNSS_FEATURE )
-radio_return_code_t smtc_modem_services_lr1110_gnss_get_context_status( const void* radio_ctx, uint8_t buff[9] )
+#if defined( LR11XX_TRANSCEIVER ) && defined( ENABLE_MODEM_GNSS_FEATURE )
+radio_return_code_t smtc_modem_services_lr11xx_gnss_get_context_status( const void* radio_ctx, uint8_t buff[9] )
 {
     // Secure radio access
     modem_context_suspend_radio_access( RP_TASK_TYPE_NONE );
     // read gnss context status
-    lr1110_status_t status = lr1110_gnss_get_context_status( radio_ctx, buff );
+    lr11xx_status_t status = lr11xx_gnss_get_context_status( radio_ctx, buff );
     // Release radio access
     modem_context_resume_radio_access( );
-    if( status != LR1110_STATUS_OK )
+    if( status != LR11XX_STATUS_OK )
     {
         return MODEM_SERVICES_RADIO_ERROR;
     }
     return MODEM_SERVICES_RADIO_OK;
 }
 
-radio_return_code_t smtc_modem_services_lr1110_gnss_push_dmc_msg( const void* radio_ctx, uint8_t* buff,
+radio_return_code_t smtc_modem_services_lr11xx_gnss_push_dmc_msg( const void* radio_ctx, uint8_t* buff,
                                                                   uint16_t buff_len )
 {
     // Secure radio access
     modem_context_suspend_radio_access( RP_TASK_TYPE_NONE );
     // push gnss dmc message
-    lr1110_status_t status = lr1110_gnss_push_dmc_msg( radio_ctx, buff, buff_len );
+    lr11xx_status_t status = lr11xx_gnss_push_dmc_msg( radio_ctx, buff, buff_len );
     // Release radio access
     modem_context_resume_radio_access( );
 
-    if( status != LR1110_STATUS_OK )
+    if( status != LR11XX_STATUS_OK )
     {
         return MODEM_SERVICES_RADIO_ERROR;
     }
     return MODEM_SERVICES_RADIO_OK;
 }
-#endif  // LR1110_TRANSCEIVER && ENABLE_MODEM_GNSS_FEATURE
+#endif  // LR11XX_TRANSCEIVER && ENABLE_MODEM_GNSS_FEATURE
 /*
  * -----------------------------------------------------------------------------
  * --- PRIVATE FUNCTIONS DEFINITION --------------------------------------------

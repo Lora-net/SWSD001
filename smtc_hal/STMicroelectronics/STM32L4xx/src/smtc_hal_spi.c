@@ -209,7 +209,6 @@ void HAL_SPI_MspInit( SPI_HandleTypeDef* spiHandle )
 
 void HAL_SPI_MspDeInit( SPI_HandleTypeDef* spiHandle )
 {
-    uint32_t local_id = 0;
     if( spiHandle->Instance == hal_spi[0].interface )
     {
         __HAL_RCC_SPI1_CLK_DISABLE( );
@@ -232,7 +231,6 @@ void HAL_SPI_MspDeInit( SPI_HandleTypeDef* spiHandle )
     }
     else if( spiHandle->Instance == hal_spi[1].interface )
     {
-        local_id = 1;
         __HAL_RCC_SPI2_CLK_DISABLE( );
     }
     else

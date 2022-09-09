@@ -55,18 +55,30 @@ extern "C" {
  * -----------------------------------------------------------------------------
  * --- PUBLIC CONSTANTS --------------------------------------------------------
  */
-
-// clang-format off
-#define RP_HOOK_ID_USER_SUSPEND         ( 0 )
-#define RP_HOOK_ID_SUSPEND              ( 1 )
-#define RP_HOOK_ID_LR1MAC_STACK         ( 2 )
-#define RP_HOOK_ID_LBT                  ( 3 )
-#define RP_HOOK_ID_RTC_COMPENSATION     ( 4 )
-#define RP_HOOK_ID_CLASS_B_BEACON       ( 5 )
-#define RP_HOOK_ID_CLASS_B_PING_SLOT    ( 6 )
-#define RP_HOOK_ID_CLASS_C              ( 7 )
-// clang-format on
-
+#ifndef RP_HOOK_ID_REDEFINE
+enum RP_HOOK_ID_DEF
+{
+#if !defined( LR1110_MODEM_E )
+    RP_HOOK_ID_USER_SUSPEND = 0,
+    RP_HOOK_ID_USER_SUSPEND_0,
+#endif  // !LR1110_MODEM_E
+    RP_HOOK_ID_SUSPEND,
+    RP_HOOK_ID_LR1MAC_STACK,
+    RP_HOOK_ID_LBT,
+    RP_HOOK_ID_RTC_COMPENSATION,
+    RP_HOOK_ID_CLASS_B_BEACON,
+#if defined( SMTC_D2D )
+    RP_HOOK_ID_CLASS_B_D2D,
+#endif  // SMTC_D2D
+    RP_HOOK_ID_CLASS_B_PING_SLOT,
+    RP_HOOK_ID_USER_SUSPEND_1,
+#if !defined( LR1110_MODEM_E )
+    RP_HOOK_ID_USER_SUSPEND_2,
+#endif  // !LR1110_MODEM_E
+    RP_HOOK_ID_CLASS_C,
+    RP_HOOK_ID_MAX
+};
+#endif
 /*
  * -----------------------------------------------------------------------------
  * --- PUBLIC TYPES ------------------------------------------------------------
