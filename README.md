@@ -201,3 +201,38 @@ Region: EU868
 
 INFO: ###### ===== JOINED EVENT ==== ######
 ```
+
+## Validation
+
+The examples provided in the SDK have been tested under the following configurations:
+
+- shields (not all shields have been used on every regions):
+  - LR1110MB1DJS
+  - LR1110MB1GJS
+  - LR1120MB1DJS
+  - LR1120MB1GJS
+  - SX1261MB1BAS
+  - SX1261MB1CAS
+  - SX1262MB1CAS
+  - SX1262MB1DAS
+  - SX1268MB1GAS
+- LoRaWAN Network Server: The Things Network (v3.22.0)
+- Application Server: the Node-Red based one provided in [`apps/examples/application_server`](apps/examples/application_server/README.md)
+
+
+| Regions | Validation executed |  Comment |
+| -- | :--: | -- |
+| SMTC_MODEM_REGION_AS_923_GRP1 | :white_check_mark: | |
+| SMTC_MODEM_REGION_AS_923_GRP2 | :white_check_mark: | |
+| SMTC_MODEM_REGION_AS_923_GRP3 | :white_check_mark: | |
+| SMTC_MODEM_REGION_AU_915 | :white_check_mark: | |
+| SMTC_MODEM_REGION_CN_470 | :x: | Validation has not been executed on this region |
+| SMTC_MODEM_REGION_CN_470_RP_1_0 | :white_check_mark: | |
+| SMTC_MODEM_REGION_EU_868 | :white_check_mark: | |
+| SMTC_MODEM_REGION_IN_865 | :white_check_mark: | |
+| SMTC_MODEM_REGION_KR_920 | :white_check_mark: | |
+| SMTC_MODEM_REGION_RU_864 | :white_check_mark: | |
+| SMTC_MODEM_REGION_US_915 | :white_check_mark: | |
+| SMTC_MODEM_REGION_WW2G4 | :white_check_mark: | Validation has been executed on examples as only LoRaWAN class A is supported for this region: <br> - time_sync <br> - stream <br> - lorawan_asynchronous <br> - almanac_update <br> - dm_info <br> - lorawan (`SMTC_MODEM_CLASS_A`) <br> - large_file_upload |
+
+

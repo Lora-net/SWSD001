@@ -148,3 +148,7 @@ Therefore if when using multicast class B with high datarate ping slots are not 
 
 Note that increasing this value will lead to an overconsumption as the ping slot windows will open earlier and last longer.
 The value of crystal error estimation must then be evaluated by balancing PER on multicast class B downlinks and consumption.
+
+## Limitation
+
+Even though the multicast class B example can run with the region configured to `SMTC_MODEM_REGION_WW2G4`, it is not supported and has not been tested.

@@ -91,3 +91,8 @@ The info displayed in this print may vary.
 
 However, one stays always the same to confirm the downlink is indeed a class B one, which is the Rx Windows.
 This last must be equal to SMTC_MODEM_EVENT_DOWNDATA_WINDOW_RXB
+
+## Limitation
+
+Even though the class B example can run with the region configured to `SMTC_MODEM_REGION_WW2G4`, it is not supported and has not been tested.
+

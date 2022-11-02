@@ -55,3 +55,7 @@ INFO: Request uplink
 ```
 INFO: ###### ===== TX DONE EVENT ==== ######
 ```
+
+## Limitation
+
+Even though the lorawan example can run with the LoRaWAN class set to `SMTC_MODEM_CLASS_C` AND the region set to `SMTC_MODEM_REGION_WW2G4`, this configuration is not supported.

@@ -5,13 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2022-11-02
+
+### Changed
+
+- Documentation update:
+  - Only LoRaWAN class A supported for WW2G4 region
+  - Region CN470 not validated
+
 ## [2.0.0] - 2022-09-09
 
 ### Added
 
 - Regional Parameters version can now be chosen in `apps/common/apps_modem_common.mk` - default value set to `RP2_103`
 - Region switching demonstration
-- Class B, multicast class B and multicast class C examples
+- Class B, multicast class B and multicast class C examples (region `SMTC_MODEM_REGION_WW2G4` is not supported)
 - Support of all SX1261/SX1262/SX1268 and LR1110/LR1120 shields:
   - SX1261MB1BAS
   - SX1261MB1CAS

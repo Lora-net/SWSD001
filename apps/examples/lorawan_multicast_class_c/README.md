@@ -102,3 +102,7 @@ Assuming that [mosquitto](https://mosquitto.org/) has been installed on a local 
 ```
 mosquitto_pub -h eu1.cloud.thethings.network   -t "v3/sample-app-1@ttn/devices/sample-app-1-multicast-dev/down/push"   -u "sample-app-1@ttn" -P "NNSXS.MN..." -d  -m '{"downlinks":[{"class_b_c":{"gateways":[{"gateway_ids":{"gateway_id":"sample-gateway-1"}}]},"f_port":42,"frm_payload":"bXVsdGljYXN0Cg==","priority":"NORMAL"}]}'
 ```
+
+## Limitation
+
+Even though the multicast class C example can run with the region configured to `SMTC_MODEM_REGION_WW2G4`, it is not supported.

@@ -1,5 +1,5 @@
 /*!
- * @file      .h
+ * @file      apps_modem_common_version.h
  *
  * @brief     Version header file of the LoRa Basics Modem SDK
  *
@@ -54,7 +54,7 @@ extern "C" {
  * --- PUBLIC MACROS -----------------------------------------------------------
  */
 
-#define APPS_MODEM_COMMON_SDK_VERSION "v2.0.0"
+#define APPS_MODEM_COMMON_SDK_VERSION "v2.0.1"
 
 /*
  * -----------------------------------------------------------------------------
