@@ -190,19 +190,20 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     rc = smtc_modem_set_deveui( stack_id, dev_eui );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_deveui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_set_deveui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     rc = smtc_modem_set_joineui( stack_id, join_eui );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_joineui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_set_joineui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ),
+                                rc );
     }
 
     rc = smtc_modem_set_nwkkey( stack_id, app_key );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_nwkkey failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_set_nwkkey failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 #endif
 
@@ -215,7 +216,7 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_deveui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_get_deveui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     rc = smtc_modem_get_joineui( stack_id, join_eui );
@@ -225,7 +226,8 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_joineui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_get_joineui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ),
+                                rc );
     }
 
 #ifdef LR11XX_DEFINED_JOIN_PARAMETERS
@@ -240,7 +242,8 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_chip_eui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_get_chip_eui failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ),
+                                rc );
     }
 
     rc = smtc_modem_get_pin( stack_id, pin );
@@ -250,14 +253,14 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     }
     else
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_get_pin failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_get_pin failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 #endif
 
     rc = smtc_modem_set_class( stack_id, LORAWAN_CLASS );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_class failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_set_class failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     modem_class_to_string( LORAWAN_CLASS );
@@ -265,7 +268,7 @@ void apps_modem_common_configure_lorawan_params( uint8_t stack_id )
     rc = smtc_modem_set_region( stack_id, LORAWAN_REGION );
     if( rc != SMTC_MODEM_RC_OK )
     {
-        HAL_DBG_TRACE_ERROR( "smtc_modem_set_region failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
+        HAL_DBG_TRACE_CRITICAL( "smtc_modem_set_region failed: rc=%s (%d)\n", smtc_modem_return_code_to_str( rc ), rc );
     }
 
     modem_region_to_string( LORAWAN_REGION );

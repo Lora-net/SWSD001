@@ -130,6 +130,29 @@ extern "C" {
         HAL_DBG_TRACE_PRINTF( HAL_DBG_TRACE_COLOR_DEFAULT ); \
     } while( 0 )
 
+#ifdef ENABLE_CRITICAL_ERROR_DEADLOOP
+#define HAL_DBG_TRACE_CRITICAL( ... )                        \
+    do                                                       \
+    {                                                        \
+        HAL_DBG_TRACE_PRINTF( HAL_DBG_TRACE_COLOR_RED );     \
+        HAL_DBG_TRACE_PRINTF( "CRITICAL: " );                \
+        HAL_DBG_TRACE_PRINTF( __VA_ARGS__ );                 \
+        HAL_DBG_TRACE_PRINTF( HAL_DBG_TRACE_COLOR_DEFAULT ); \
+        while( 1 )                                           \
+        {                                                    \
+        }                                                    \
+    } while( 0 )
+#else  // ENABLE_CRITICAL_ERROR_DEADLOOP
+#define HAL_DBG_TRACE_CRITICAL( ... )                        \
+    do                                                       \
+    {                                                        \
+        HAL_DBG_TRACE_PRINTF( HAL_DBG_TRACE_COLOR_RED );     \
+        HAL_DBG_TRACE_PRINTF( "CRITICAL: " );                \
+        HAL_DBG_TRACE_PRINTF( __VA_ARGS__ );                 \
+        HAL_DBG_TRACE_PRINTF( HAL_DBG_TRACE_COLOR_DEFAULT ); \
+    } while( 0 )
+#endif  // ENABLE_CRITICAL_ERROR_DEADLOOP
+
 #define HAL_DBG_TRACE_ARRAY( msg, array, len )                                \
     do                                                                        \
     {                                                                         \
@@ -161,6 +184,7 @@ extern "C" {
 #define HAL_DBG_TRACE_INFO( ... )
 #define HAL_DBG_TRACE_WARNING( ... )
 #define HAL_DBG_TRACE_ERROR( ... )
+#define HAL_DBG_TRACE_CRITICAL( ... )
 #define HAL_DBG_TRACE_ARRAY( msg, array, len )
 #define HAL_DBG_TRACE_PACKARRAY( ... )
 

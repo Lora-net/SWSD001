@@ -16,12 +16,12 @@ Several parameters can be updated in `main_tx_rx_continuous.c` header file:
 | `TX_SINGLE_INTER_DELAY` | Time in ms between two single transmission                               | `uint32_t`                                     | 1000                         |
 | `TX_POWER_USED`         | TX power in dBm                                                          | `int8_t`, range depends on radio configuration | 14                           |
 | `TX_POWER_OFFSET`       | TX power offset in dB                                                    | `int8_t`                                       | 0                            |
-| `TX_PAYLOAD_LEN`        | Length of the transmited payload                                         | [0,255]                                        | 51                           |
+| `TX_PAYLOAD_LEN`        | Length of the transmitted payload                                         | [0,255]                                        | 51                           |
 | `LORAWAN_REGION_USED`   | LoRaWAN used region                                                      | Value from `smtc_modem_region_t`               | `SMTC_MODEM_REGION_EU_868`   |
 | `FREQUENCY`             | Freq in Hz                                                               | `uint32_t`                                     | 868100000                    |
 | `SPREADING_FACTOR_USED` | Spreading factor                                                         | Value from `smtc_modem_test_sf_t`              | `SMTC_MODEM_TEST_LORA_SF7`   |
 | `BANDWIDTH_USED`        | Bandwidth                                                                | Value from `smtc_modem_test_bw_t`              | `SMTC_MODEM_TEST_BW_125_KHZ` |
-| `CODING_RATE_USED`      | Conding rate                                                             | Value from `smtc_modem_test_cr_t`              | `SMTC_MODEM_TEST_CR_4_5`     |
+| `CODING_RATE_USED`      | Coding rate                                                              | Value from `smtc_modem_test_cr_t`              | `SMTC_MODEM_TEST_CR_4_5`     |
 
 ## Expected Behavior
 

@@ -44,7 +44,7 @@ Here follow the steps that shall be seen in logs to indicate the expected behavi
 INFO: ###### ===== JOINED EVENT ==== ######
 ```
 
-### Alarm event occured, generating uplink
+### Alarm event occurred, generating uplink
 ```
 INFO: ###### ===== ALARM EVENT ==== ######
 INFO: Request uplink

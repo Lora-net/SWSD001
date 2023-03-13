@@ -32,6 +32,7 @@ Shield $(SMTC_SHIELD_LR11XX) is not supported.
 The supported shields are:
   * LR1110: LR1110MB1DIS / LR1110MB1DJS / LR1110MB1GIS / LR1110MB1GJS
   * LR1120: LR1120MB1DIS / LR1120MB1DJS / LR1120MB1GIS / LR1120MB1GJS
+  * LR1121: LR1121MB1DIS / LR1121MB1GIS
 endef
 
 C_SOURCES += \
@@ -49,6 +50,11 @@ else ifneq (,$(findstring LR1120,$(SMTC_SHIELD_LR11XX)))
 C_SOURCES += \
 $(SMTC_SHIELD_LR11XX_DIR)/smtc_shield_lr11xx/common/src/smtc_shield_lr11x0_common.c
 include $(SMTC_SHIELD_LR11XX_DIR)/smtc_shield_lr11xx/LR1120/smtc_shield_lr1120.mk
+
+else ifneq (,$(findstring LR1121,$(SMTC_SHIELD_LR11XX)))
+C_SOURCES += \
+$(SMTC_SHIELD_LR11XX_DIR)/smtc_shield_lr11xx/common/src/smtc_shield_lr11x1_common.c
+include $(SMTC_SHIELD_LR11XX_DIR)/smtc_shield_lr11xx/LR1121/smtc_shield_lr1121.mk
 
 else
 $(error $(SMTC_SHIELD_LR11XX_SUPPORTED_BODY))

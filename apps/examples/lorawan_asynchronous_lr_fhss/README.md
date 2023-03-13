@@ -36,7 +36,7 @@ You must follow the 'Connecting a gateway' and 'Connecting a device' instruction
 
 Several parameters can be updated in `main_lorawan_asynchronous.h` header file:
 
-| Constant                   | Description                                                                   | Poosible values  | Default Value |
+| Constant                   | Description                                                                   | Possible values  | Default Value |
 | -------------------------- | ----------------------------------------------------------------------------- | ---------------- | ------------- |
 | `LORAWAN_APP_PORT`         | LoRaWAN FPort used for the uplink messages                                    | [1, 223]         | 2             |
 | `LORAWAN_CONFIRMED_MSG_ON` | Request a confirmation from the LNS that the uplink message has been received | {`true`,`false`} | `false`       |
@@ -111,7 +111,7 @@ INFO: LR-FHSS datarates 8-11 are available
 
 In this particular case, the new LR-FHSS channels 8 and 9 shown above are enabled (in addition to channels 0 through 7). These two channels together permit the use of LR-FHSS datarates 8, 9, 10, and 11.
 
-### Push button event occured, generating an LR-FHSS uplink
+### Push button event occurred, generating an LR-FHSS uplink
 ```
 INFO: ###### ===== BUTTON PUSH ==== ######
 Modem status: JOINED 
@@ -195,7 +195,7 @@ INFO: LR-FHSS datarates 5-6 are available
 
 In this particular case, the 500-kHz-LoRa/1523-kHz-LR-FHSS channel 68 (64 + 4) shown above is enabled (in addition to various 125 kHz LoRa channels). This channel permits the use of LR-FHSS datarates 5 and 6.
 
-### Push button event occured, generating an LR-FHSS uplink
+### Push button event occurred, generating an LR-FHSS uplink
 ```
 INFO: ###### ===== BUTTON PUSH ==== ######
 Modem status: JOINED 
@@ -279,7 +279,7 @@ INFO: LR-FHSS datarate1 7 is available
 
 In this particular case, the 500-kHz-LoRa/1523-kHz-LR-FHSS channel 64 (64 + 0) shown above is enabled (in addition to various 125 kHz LoRa channels). This channel permits the use of LR-FHSS datarate 7.
 
-### Push button event occured, generating an LR-FHSS uplink
+### Push button event occurred, generating an LR-FHSS uplink
 ```
 INFO: ###### ===== BUTTON PUSH ==== ######
 Modem status: JOINED 

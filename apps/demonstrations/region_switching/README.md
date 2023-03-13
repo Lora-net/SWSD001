@@ -14,7 +14,7 @@ Once a 2.4GHz network is joined, the application takes sending uplinks up again 
 
 Several parameters can be updated in `main_region_switching.h` header file:
 
-| Constant                                            | Description                                          | Poosible values | Default Value |
+| Constant                                            | Description                                          | Possible values | Default Value |
 | --------------------------------------------------- | ---------------------------------------------------- | --------------- | ------------- |
 | `LORAWAN_APP_PORT`                                  | LoRaWAN FPort used for uplink and downlink messages  | [1, 223]        | 2             |
 | `LORAWAN_MAX_LOST_CONNECTION_CNT_BEFORE_LINK_CHECK` | Number of uplink without downlink before link check  | [1, 255]        | 10            |
@@ -46,7 +46,7 @@ Here follow the steps that shall be seen in logs to indicate the expected behavi
 INFO: ###### ===== JOINED EVENT ==== ######
 ```
 
-### Push button event occured, generating uplink
+### Push button event occurred, generating uplink
 
 ``` shell
 INFO: ###### ===== BUTTON PUSH ==== ######

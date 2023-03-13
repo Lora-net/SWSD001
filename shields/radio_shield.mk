@@ -26,22 +26,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+C_SOURCES +=  \
+$(TOP_DIR)/shields/common/usr_button.c
+C_INCLUDES +=  \
+-I$(TOP_DIR)/shields/interface \
+-I$(TOP_DIR)/shields/common
+
 ifneq (,$(findstring LR11,$(RADIO_BOARD)))
 PLATFORM_BOARD_MAKEFILE = $(TOP_DIR)/shields/LR11XX/lr11xx.mk
-C_SOURCES +=  \
-$(TOP_DIR)/shields/common/usr_button.c
-C_INCLUDES +=  \
--I$(TOP_DIR)/shields/interface \
--I$(TOP_DIR)/shields/common
-
 else ifneq (,$(findstring SX126,$(RADIO_BOARD)))
 PLATFORM_BOARD_MAKEFILE = $(TOP_DIR)/shields/SX126X/sx126x.mk
-C_SOURCES +=  \
-$(TOP_DIR)/shields/common/usr_button.c
-C_INCLUDES +=  \
--I$(TOP_DIR)/shields/interface \
--I$(TOP_DIR)/shields/common
-
+else ifneq (,$(findstring SX128,$(RADIO_BOARD)))
+PLATFORM_BOARD_MAKEFILE = $(TOP_DIR)/shields/SX128X/sx128x.mk
 else
 $(error Invalid platform board, please select a supported platform board)
 endif

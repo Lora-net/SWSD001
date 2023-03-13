@@ -42,7 +42,7 @@ LoRa Basics Modem is platform independent and can be used with any MCU that fulf
 | `smtc_modem_time_stop_sync_service`                | `lr1110_modem_set_alc_sync_mode`                         |         |
 | NO API                                             | `lr1110_modem_get_alc_sync_mode`                         |         |
 | `smtc_modem_get_time`                              | `lr1110_modem_get_gps_time`                              |         |
-| NO API                                             | `lr1110_modem_set_gps_time`                              | in LBM the only way to get the date is to reveive it from the network |
+| NO API                                             | `lr1110_modem_set_gps_time`                              | in LBM the only way to get the date is to receive it from the network |
 | `smtc_modem_time_trigger_sync_request`             | NO API                                                   |         |
 | `smtc_modem_time_set_alcsync_fport`                | `lr1110_modem_set_alc_sync_port`                         |         |
 | `smtc_modem_time_get_alcsync_fport`                | `lr1110_modem_get_alc_sync_port`                         |         |
@@ -176,7 +176,7 @@ LoRa Basics Modem doesn't have a smtc_modem_gnss layer, it uses directly the LR1
 
 ## Wi-Fi
 
-LoRa Basics Modem doesn't have a smtc_modem_wifi layer, it uses directly the LR11XX driver as part of LoRa Basics Modem. There are two possibilitie:
+LoRa Basics Modem doesn't have a smtc_modem_wifi layer, it uses directly the LR11XX driver as part of LoRa Basics Modem. There are two possibilities:
 -   Either call directly the driver APIs with the constraint to surround each call with `smtc_modem_suspend_before_user_radio_access` and `smtc_modem_resume_after_user_radio_access` preventing the modem to access to the radio at the same time as the user.
 -   Or use the Wi-Fi Middleware dedicated to LoRa Basics Modem which is strongly recommended. An implementation example can be found [here](https://github.com/Lora-net/SWSD004/tree/master/geolocation_middleware)
 

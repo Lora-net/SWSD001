@@ -61,7 +61,7 @@ INFO: Checking/printing local UTC time upon TIME reception
 INFO: Current UTC time: Tue 2022-04-05 20:27:49 GMT
 ```
 
-### Repeating synchronisation request upon timer
+### Repeating synchronization request upon timer
 
 If `APP_MODEM_TIME_MANUAL_SYNC_INTERVAL_IN_S` is set to any other value than 0 an alarm event is supposed to be seen in the logs as follows:
 

@@ -54,7 +54,7 @@ extern "C" {
  * --- PUBLIC MACROS -----------------------------------------------------------
  */
 
-#define APPS_MODEM_COMMON_SDK_VERSION "v2.0.1"
+#define APPS_MODEM_COMMON_SDK_VERSION "v2.1.0"
 
 /*
  * -----------------------------------------------------------------------------

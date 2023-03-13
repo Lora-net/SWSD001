@@ -79,7 +79,6 @@
  */
 static uint8_t stack_id = 0;
 
-static bool is_time_sync     = false;
 static bool is_ping_slot_set = false;
 
 /*
@@ -256,8 +255,6 @@ void on_modem_time_sync( smtc_modem_event_time_status_t status )
     {
         apps_modem_common_get_utc_time( );
 
-        is_time_sync = true;
-
         if( is_ping_slot_set == true )
         {
             ASSERT_SMTC_MODEM_RC( smtc_modem_set_class( stack_id, SMTC_MODEM_CLASS_B ) );
@@ -281,7 +278,11 @@ void on_class_b_ping_slot_info( smtc_modem_event_class_b_ping_slot_status_t stat
     {
         is_ping_slot_set = true;
 
-        if( is_time_sync == true )
+        uint32_t gps_time_s;
+        uint32_t gps_fractional_s;
+
+        if( smtc_modem_get_time( &gps_time_s, &gps_fractional_s ) ==
+            SMTC_MODEM_RC_OK )  // Performed to check if time is available
         {
             ASSERT_SMTC_MODEM_RC( smtc_modem_set_class( stack_id, SMTC_MODEM_CLASS_B ) );
         }

@@ -30,6 +30,8 @@ ifneq (,$(findstring LR1110,$(RADIO_BOARD)))
 RADIO = lr1110
 else ifneq (,$(findstring LR1120,$(RADIO_BOARD)))
 RADIO = lr1120
+else ifneq (,$(findstring LR1121,$(RADIO_BOARD)))
+RADIO = lr1120 # LR1121 can be used with LoRa Basics Modem v3.2.4 if defined as LR1120
 else
 $(error Invalid platform board, please select a supported platform board)
 endif

@@ -59,7 +59,7 @@ INFO: Initialize the file upload.
 ### Downlink received from server indicating that file has been successfully uploaded
 
 ```
-WARN: DM_FILE_DONE donwlink
+WARN: DM_FILE_DONE downlink
 INFO: File upload DONE with server confirmation 
 INFO: ###### ===== UPLOAD DONE EVENT ==== ######
 Upload status: SMTC_MODEM_EVENT_UPLOADDONE_SUCCESSFUL

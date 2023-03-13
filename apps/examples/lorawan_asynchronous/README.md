@@ -15,7 +15,7 @@ The application is also capable of displaying data and meta-data of a received d
 
 Several parameters can be updated in `main_lorawan_asynchronous.h` header file:
 
-| Constant                   | Description                                                                   | Poosible values  | Default Value |
+| Constant                   | Description                                                                   | Possible values  | Default Value |
 | -------------------------- | ----------------------------------------------------------------------------- | ---------------- | ------------- |
 | `LORAWAN_APP_PORT`         | LoRaWAN FPort used for the uplink messages                                    | [1, 223]         | 2             |
 | `LORAWAN_CONFIRMED_MSG_ON` | Request a confirmation from the LNS that the uplink message has been received | {`true`,`false`} | `false`       |
@@ -51,7 +51,7 @@ INFO: Cannot send uplink until joined
 INFO: ###### ===== JOINED EVENT ==== ######
 ```
 
-### Push button event occured, generating uplink
+### Push button event occurred, generating uplink
 ```
 INFO: ###### ===== BUTTON PUSH ==== ######
 Modem status: JOINED 

@@ -57,7 +57,7 @@ This SDK is developed on the STMicroeletronics [NUCLEO-L476RG development board]
 
 Different Semtech shields can configured at compile time:
 
-* LR1110 / LR1120 see [README](shields/LR11XX/smtc_shield_lr11xx/README.md)
+* LR1110 / LR1120 / LR1121 see [README](shields/LR11XX/smtc_shield_lr11xx/README.md)
 * SX1261 / SX1262 / SX1268 [README](shields/SX126X/smtc_shield_sx126x/README.md)
 
 ### Toolchain
@@ -69,12 +69,13 @@ Examples can be compiled with either:
 
 The projects are known to compile with GCC arm-none-eabi toolchain v10.3.1.
 
-### LR1110 / LR1120 firmware
+### LR1110 / LR1120 / LR1121 firmware
 
 The LoRa Basics Modem library requires the following firmware:
 
 * LR1110 firmware version 0x0307 ([available here](https://github.com/Lora-net/radio_firmware_images/tree/master/lr1110/transceiver))
 * LR1120 firmware version 0x0101 ([available here](https://github.com/Lora-net/radio_firmware_images/tree/master/lr1120/transceiver))
+* LR1121 firmware version 0x0101 ([available here](https://github.com/Lora-net/radio_firmware_images/tree/master/lr1121/transceiver))
 
 To update the transceiver with the desired firmware version, please use [the updater tool application](https://github.com/Lora-net/SWTL001).
 
@@ -94,9 +95,9 @@ Each example is delivered with a several Keil project files, available under `MD
 
 | Target name                                         | Transceivers             | LoRaWAN parameters | Cryptographic operations    | Notes                              |
 | --------------------------------------------------- | ------------------------ | ------------------ | --------------------------- | ---------------------------------- |
-| lbm_example_<example>_LR11xx_LR_cred_crypto.uvprojx | LR1110 / LR1120          | LR11XX-based       | LR11xx cryptographic engine |                                    |
-| lbm_example_<example>_LR11xx_LR_crypto.uvprojx      | LR1110 / LR1120          | User-defined       | LR11xx cryptographic engine |                                    |
-| lbm_example_<example>_LR11xx_soft_crypto.uvprojx    | LR1110 / LR1120          | User-defined       | Software                    |                                    |
+| lbm_example_<example>_LR11xx_LR_cred_crypto.uvprojx | LR1110 / LR1120 / LR1121 | LR11XX-based       | LR11xx cryptographic engine |                                    |
+| lbm_example_<example>_LR11xx_LR_crypto.uvprojx      | LR1110 / LR1120 / LR1121 | User-defined       | LR11xx cryptographic engine |                                    |
+| lbm_example_<example>_LR11xx_soft_crypto.uvprojx    | LR1110 / LR1120 / LR1121 | User-defined       | Software                    |                                    |
 | lbm_example_<example>_SX126x_soft_crypto.uvprojx    | SX1261 / SX1262 / SX1268 | User-defined       | Software                    | Not available for `Almanac update` |
 
 Each project has different targets ([Keil manual](https://www.keil.com/support/man/docs/uv4/uv4_ca_projtargfilegr.htm)), each one selecting a specific shield.
@@ -109,19 +110,19 @@ The procedure to compile a project is then the following:
 
 #### GNU Arm embedded toolchain
 
-Each example is delivered with a makfile, available under `makefile` folder. The output files of the build process are stored in the `build` folder with firmware binary file having the same name as the project with a .bin extension.
+Each example is delivered with a makefile, available under `makefile` folder. The output files of the build process are stored in the `build` folder with firmware binary file having the same name as the project with a .bin extension.
 
 It is possible to choose the cryptographic mode with the `CRYPTO` variable:
 
-| CRYPTO value            | Cryptographic operations    | LoRaWAN parameters | Comments                                          |
-| ----------------------- | --------------------------- | ------------------ | ------------------------------------------------- |
-| SOFT                    | Software                    | User-defined       | Compatible with all transceivers                  |
-| LR11XX                  | LR11XX cryptographic engine | User-defined       | Compatible with LR1110 / LR1120 transceivers only |
-| LR11XX_WITH_CREDENTIALS | LR11XX cryptographic engine | LR11XX-based       | Compatible with LR1110 / LR1120 transceivers only |
+| CRYPTO value            | Cryptographic operations    | LoRaWAN parameters | Comments                                                   |
+| ----------------------- | --------------------------- | ------------------ | ---------------------------------------------------------- |
+| SOFT                    | Software                    | User-defined       | Compatible with all transceivers                           |
+| LR11XX                  | LR11XX cryptographic engine | User-defined       | Compatible with LR1110 / LR1120 / LR1121 transceivers only |
+| LR11XX_WITH_CREDENTIALS | LR11XX cryptographic engine | LR11XX-based       | Compatible with LR1110 / LR1120 / LR1121 transceivers only |
 
 The default value is `LR11XX`.
 
-It is possible to choose the shield with the `RADIO_BOARD` variable. The possible values are listed in the correspondind `README` file:
+It is possible to choose the shield with the `RADIO_BOARD` variable. The possible values are listed in the corresponding `README` file:
 
 * [LR11xx shields](shields/LR11XX/smtc_shield_lr11xx/README.md)
 * [SX126x shields](shields/SX126X/smtc_shield_sx126x/README.md)
@@ -147,7 +148,7 @@ $ make clean_lbm
 
 ##### Command line configuration
 
-Additionnal configuration flags can be passed from command line to compiler with `EXTRAFLAGS` argument.
+Additional configuration flags can be passed from command line to compiler with `EXTRAFLAGS` argument.
 This is dedicated to define macros that can be defined like the following:
 
 ```bash
@@ -159,6 +160,19 @@ Not all macro can be redefined through this way. Refer to the readme of examples
 
 Note that when using the configuration on command line, `make` cannot detect a change in configuration on next build.
 Therefore `make clean` must be invoked when building after a build where configuration was provided on command line.
+
+##### Note on Critical message printing
+
+The code can produce critical messages being printed on serial port when critical situations occurs.
+This is typically the case when setting a LoRaWAN region or LoRaWAN class fails.
+
+The default behavior is to print the critical message and keep running.
+This behavior can be changed so that the code freezes (until watchdog reset the device).
+To do so, the macro `ENABLE_CRITICAL_ERROR_DEADLOOP` has to be defined, for instance by doing:
+
+```shell
+$ make EXTRAFLAGS='-DENABLE_CRITICAL_ERROR_DEADLOOP'
+```
 
 ### Load
 
