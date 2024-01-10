@@ -1,3 +1,18 @@
+
+---
+---
+
+# Notice: LoRa Basics Modem SDK (SWSD001) has been retired effective 2023-12-15
+
+The LoRa Basics Modem SDK (SWSD001) will receive no further enhancements and/or bug fixes beyond the latest version 2.1.0. Going forward, examples of how to exercise functionality of the LoRa Basics Modem (SWL2001) are bundled within the LoRa Basics Modem release v4.3.0 (and onward) development repository (http://github.com/lora-net/SWL2001/tree/v4.3.0). The  examples included in the SWL2001 repository target application use-cases instead of atomic demonstrations of functionality. The SWL2001 repository now contains multiple reference implementations targeting different MCU and RTOS architectures and as such offers more example code regarding how to port LBM to new platforms.
+
+Support requests for earlier versions should be directed to https://semtech.my.site.com/ldp/ldp_support
+
+
+----
+----
+
+
 # LoRa Basics Modem SDK
 
 The LoRa Basics modem SDK contains several simple examples highlighting LoRa Basic Modem features.
